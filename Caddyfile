@@ -1,0 +1,25 @@
+{$DOMAIN} {
+    tls {$EMAIL}
+
+    # API → backend FastAPI
+    handle /api/* {
+        reverse_proxy backend:8000
+    }
+
+    handle /health {
+        reverse_proxy backend:8000
+    }
+
+    # Todo lo demás → frontend estático
+    handle {
+        root * /srv
+        try_files {path} /index.html
+        file_server
+    }
+
+    # Logs
+    log {
+        output stdout
+        format console
+    }
+}

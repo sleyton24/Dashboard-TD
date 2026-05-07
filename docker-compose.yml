@@ -1,0 +1,31 @@
+services:
+  backend:
+    build: ./backend
+    environment:
+      - ADMIN_TOKEN=${ADMIN_TOKEN}
+      - DATABASE_PATH=/data/dashboard.db
+      - SEED_DATA_PATH=/app/seed_data.json
+    volumes:
+      - ./backend/data:/data
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      - DOMAIN=${DOMAIN:-localhost}
+      - EMAIL=${EMAIL:-admin@example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./frontend:/srv:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:

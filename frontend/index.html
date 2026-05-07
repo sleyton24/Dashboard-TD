@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Transformación Digital — Sanvest Group</title>
+<style>
+  :root {
+    --sanvest-navy: #0F1E36;
+    --sanvest-green: #A8C813;
+    --sanvest-white: #FFFFFF;
+    --navy-2: #1a2b47;
+    --navy-3: #253654;
+    --text-secondary: rgba(255, 255, 255, 0.72);
+    --text-muted: rgba(255, 255, 255, 0.45);
+    --border: rgba(255, 255, 255, 0.12);
+    --border-strong: rgba(255, 255, 255, 0.22);
+    --card-bg: rgba(255, 255, 255, 0.04);
+    --card-bg-hover: rgba(255, 255, 255, 0.07);
+    --green-soft: rgba(168, 200, 19, 0.15);
+    --danger: #D83252;
+    --warning: #FACF22;
+    --info: #3796AA;
+    --orange: #EF731B;
+    --font-primary: 'Avenir Next', 'Nunito Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    background: var(--sanvest-navy);
+    color: var(--sanvest-white);
+    font-family: var(--font-primary);
+    min-height: 100vh;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  body { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+  .header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 24px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo-mark {
+    width: 42px; height: 42px;
+    background: var(--sanvest-navy);
+    border: 2px solid var(--sanvest-green);
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; color: var(--sanvest-green);
+    font-size: 22px; letter-spacing: -1px;
+  }
+  .brand-text .sup {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 600;
+  }
+  .brand-text h1 { font-size: 18px; font-weight: 600; margin-top: 2px; }
+  .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+  /* KPIs */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+  }
+  .kpi {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+  }
+  .kpi-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 8px;
+  }
+  .kpi-value { font-size: 28px; font-weight: 700; line-height: 1.1; }
+  .kpi-value.accent { color: var(--sanvest-green); }
+  .kpi-sub { font-size: 11px; color: var(--text-secondary); margin-top: 4px; }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+  .tab {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 10px 16px;
+    font-family: inherit;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    transition: color .15s, border-color .15s;
+  }
+  .tab:hover { color: var(--sanvest-white); }
+  .tab.active {
+    color: var(--sanvest-green);
+    border-bottom-color: var(--sanvest-green);
+  }
+
+  /* Buttons */
+  .btn {
+    background: var(--sanvest-green);
+    color: var(--sanvest-navy);
+    border: none;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity .15s;
+  }
+  .btn:hover { opacity: 0.9; }
+  .btn-sm { padding: 6px 10px; font-size: 11px; }
+  .btn-secondary {
+    background: transparent;
+    color: var(--sanvest-white);
+    border: 1px solid var(--border-strong);
+  }
+  .btn-secondary:hover { background: var(--card-bg-hover); }
+  .btn-danger { background: var(--danger); color: var(--sanvest-white); }
+  .btn-icon {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 13px;
+  }
+  .btn-icon:hover { color: var(--sanvest-white); background: var(--card-bg-hover); }
+
+  /* Toolbar */
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .toolbar select, .toolbar input {
+    background: var(--card-bg);
+    color: var(--sanvest-white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 7px 10px;
+    font-family: inherit;
+    font-size: 12px;
+  }
+  .toolbar input::placeholder { color: var(--text-muted); }
+  .spacer { flex: 1; }
+
+  /* Tables */
+  .table-wrap {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12.5px;
+    min-width: 880px;
+  }
+  thead th {
+    background: var(--navy-2);
+    color: var(--text-secondary);
+    text-align: left;
+    padding: 10px 12px;
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td {
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  tbody tr:hover { background: var(--card-bg-hover); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.right { text-align: right; }
+  td.nowrap { white-space: nowrap; }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .badge-activo { background: var(--green-soft); color: var(--sanvest-green); }
+  .badge-implementacion { background: rgba(55,150,170,.18); color: var(--info); }
+  .badge-pendiente { background: rgba(250,207,34,.18); color: var(--warning); }
+  .badge-baja { background: rgba(216,50,82,.18); color: var(--danger); }
+  .badge-programada { background: rgba(55,150,170,.18); color: var(--info); }
+  .badge-curso { background: rgba(250,207,34,.18); color: var(--warning); }
+  .badge-completada { background: var(--green-soft); color: var(--sanvest-green); }
+
+  /* Unit chip */
+  .unit-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: var(--navy-3);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+  }
+  .unit-Sanvest { color: var(--sanvest-green); border-color: rgba(168,200,19,.4); }
+  .unit-ICEMM { color: var(--danger); border-color: rgba(216,50,82,.4); }
+  .unit-LAR { color: var(--info); border-color: rgba(55,150,170,.4); }
+  .unit-OLA { color: var(--warning); border-color: rgba(250,207,34,.4); }
+  .unit-Atempora { color: var(--orange); border-color: rgba(239,115,27,.4); }
+  .unit-Gerencia { color: var(--sanvest-white); border-color: var(--border-strong); }
+
+  /* Empty state */
+  .empty {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+  }
+  .empty h3 { color: var(--text-secondary); margin-bottom: 8px; font-size: 15px; }
+  .empty p { font-size: 13px; }
+
+  /* Form (inline editor) */
+  .editor {
+    background: var(--card-bg);
+    border: 1px solid var(--sanvest-green);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 14px;
+  }
+  .editor h4 { font-size: 13px; margin-bottom: 14px; color: var(--sanvest-green); }
+  .form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+  }
+  .field label {
+    display: block;
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .field input, .field select, .field textarea {
+    width: 100%;
+    background: var(--navy-2);
+    color: var(--sanvest-white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .field textarea { min-height: 60px; resize: vertical; }
+  .field input:focus, .field select:focus, .field textarea:focus {
+    outline: none;
+    border-color: var(--sanvest-green);
+  }
+  .field-full { grid-column: 1 / -1; }
+  .editor-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Plan / Gantt */
+  .plan-controls {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .plan-controls strong { color: var(--sanvest-green); }
+  .gantt {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: auto;
+    padding: 14px;
+  }
+  .gantt-row {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 12px;
+    align-items: center;
+    padding: 6px 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .gantt-row:last-child { border-bottom: none; }
+  .gantt-label {
+    font-size: 12px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .gantt-label .sub { font-size: 10px; color: var(--text-muted); }
+  .gantt-track {
+    position: relative;
+    height: 26px;
+    background: var(--navy-2);
+    border-radius: 4px;
+    min-width: 400px;
+  }
+  .gantt-bar {
+    position: absolute;
+    top: 4px;
+    height: 18px;
+    background: var(--sanvest-green);
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    padding: 0 6px;
+    font-size: 10px;
+    color: var(--sanvest-navy);
+    font-weight: 700;
+    overflow: hidden;
+  }
+  .gantt-bar.late { background: var(--danger); color: var(--sanvest-white); }
+  .gantt-bar.done { background: var(--info); color: var(--sanvest-white); }
+  .gantt-today {
+    position: absolute;
+    top: -8px;
+    bottom: -8px;
+    width: 2px;
+    background: var(--warning);
+    z-index: 2;
+  }
+  .gantt-today::before {
+    content: 'HOY';
+    position: absolute;
+    top: -14px;
+    left: -16px;
+    font-size: 9px;
+    color: var(--warning);
+    font-weight: 700;
+  }
+  .gantt-axis {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 12px;
+    margin-bottom: 10px;
+  }
+  .gantt-axis-labels {
+    display: flex;
+    justify-content: space-between;
+    color: var(--text-muted);
+    font-size: 10px;
+  }
+
+  /* Modal */
+  .modal-bg {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+  }
+  .modal-bg.active { display: flex; }
+  .modal {
+    background: var(--navy-2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 22px;
+    max-width: 420px;
+    width: 90%;
+  }
+  .modal h3 { font-size: 15px; margin-bottom: 8px; }
+  .modal p { font-size: 13px; color: var(--text-secondary); margin-bottom: 18px; }
+  .modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+
+  /* Cost breakdown */
+  .cost-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+  .cost-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 12px;
+  }
+  .cost-card .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .cost-card .value { font-size: 16px; font-weight: 700; }
+  .cost-card .sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
+
+  .hidden { display: none !important; }
+  .muted { color: var(--text-muted); }
+  .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+  .progress-inline { display: flex; align-items: center; gap: 8px; }
+  .progress-bar {
+    width: 80px; height: 6px;
+    background: var(--navy-2);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .progress-bar-fill {
+    height: 100%;
+    background: var(--sanvest-green);
+    transition: width 0.3s;
+  }
+  @media (max-width: 640px) {
+    body { padding: 14px; }
+    .kpi-value { font-size: 22px; }
+    .header { flex-direction: column; align-items: flex-start; }
+    .gantt-row, .gantt-axis { grid-template-columns: 140px 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="brand">
+    <div class="logo-mark">V</div>
+    <div class="brand-text">
+      <div class="sup">Sanvest Group</div>
+      <h1>Dashboard Transformación Digital</h1>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn btn-secondary btn-sm" onclick="exportAll()">↓ Backup JSON</button>
+    <button class="btn btn-secondary btn-sm" onclick="document.getElementById('importFile').click()">↑ Importar JSON</button>
+    <button class="btn btn-secondary btn-sm" onclick="logout()">Cerrar sesión</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importAll(event)">
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi">
+    <div class="kpi-label">Software activos</div>
+    <div class="kpi-value accent" id="kpiSoftware">0</div>
+    <div class="kpi-sub" id="kpiSoftwareSub">0 contratados en total</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Costo mensualizado</div>
+    <div class="kpi-value" id="kpiCost">$0</div>
+    <div class="kpi-sub" id="kpiCostSub">CLP / mes</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Capacitaciones</div>
+    <div class="kpi-value" id="kpiTrainings">0</div>
+    <div class="kpi-sub" id="kpiTrainingsSub">0 completadas · 0 programadas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Avance plan 100 días</div>
+    <div class="kpi-value accent" id="kpiProgress">0%</div>
+    <div class="kpi-sub" id="kpiProgressSub">0 de 0 tareas</div>
+  </div>
+  <div class="kpi">
+    <div class="kpi-label">Días del plan</div>
+    <div class="kpi-value" id="kpiDays">—</div>
+    <div class="kpi-sub" id="kpiDaysSub">Define fecha de inicio</div>
+  </div>
+</div>
+
+<div class="tabs">
+  <button class="tab active" data-panel="software">Software</button>
+  <button class="tab" data-panel="trainings">Capacitaciones</button>
+  <button class="tab" data-panel="gantt">Plan 100 días</button>
+</div>
+
+<div id="content"></div>
+
+<div class="modal-bg" id="modalBg">
+  <div class="modal">
+    <h3 id="modalTitle">Confirmar</h3>
+    <p id="modalText"></p>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancelar</button>
+      <button class="btn btn-danger btn-sm" id="modalConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Los datos vienen del backend (ver app/main.py + seed_data.json)
+const UNITS = ['Sanvest', 'LAR', 'OLÁ', 'ICEMM', 'Atémpora', 'Gerencia de Proyectos'];
+const SW_STATUS = ['activo', 'en implementación', 'pendiente', 'dado de baja'];
+const TR_TYPES = ['técnica', 'herramienta', 'soft skill'];
+const TR_STATUS = ['programada', 'en curso', 'completada'];
+const TASK_STATUS = ['pendiente', 'en curso', 'completada'];
+
+// ============== STATE ==============
+const state = {
+  software: [],
+  trainings: [],
+  gantt: [],
+  planStart: null,
+  activeTab: 'software',
+  filters: { swUnit: '', swStatus: '', swSearch: '' },
+  editing: null
+};
+
+// ============== API CLIENT ==============
+// Cuando frontend y backend comparten origen (Caddy en prod), API_BASE = ''.
+// Para dev separado, cambiar a 'http://localhost:8000'.
+const API_BASE = '';
+
+function getToken() {
+  let t = localStorage.getItem('td:token');
+  if (!t) {
+    t = prompt('Ingresa el ADMIN_TOKEN del dashboard:');
+    if (t) localStorage.setItem('td:token', t);
+  }
+  return t || '';
+}
+
+async function api(method, path, body = null) {
+  const opts = {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + getToken()
+    }
+  };
+  if (body !== null) opts.body = JSON.stringify(body);
+  const res = await fetch(API_BASE + path, opts);
+  if (res.status === 401 || res.status === 403) {
+    localStorage.removeItem('td:token');
+    alert('Token inválido o expirado. Recarga la página para reingresarlo.');
+    throw new Error('Auth failed');
+  }
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`API ${method} ${path} → ${res.status}: ${txt}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function loadAll() {
+  try {
+    const [software, trainings, gantt, settings] = await Promise.all([
+      api('GET', '/api/software'),
+      api('GET', '/api/trainings'),
+      api('GET', '/api/gantt'),
+      api('GET', '/api/settings')
+    ]);
+    state.software = software;
+    state.trainings = trainings;
+    state.gantt = gantt;
+    state.planStart = settings?.planStart || null;
+    render();
+  } catch (e) {
+    console.error('Error cargando datos:', e);
+    document.getElementById('content').innerHTML =
+      `<div class="empty"><h3>Error de conexión</h3><p>${e.message}</p><p>Verifica que el backend esté corriendo y que el token sea correcto.</p></div>`;
+  }
+}
+
+// ============== HELPERS ==============
+const fmtCLP = n => '$' + Math.round(Number(n) || 0).toLocaleString('es-CL');
+const todayStr = () => new Date().toISOString().split('T')[0];
+const uid = () => 'id_' + Math.random().toString(36).slice(2, 11);
+function fmtDate(d) {
+  if (!d) return '—';
+  const [y, m, day] = d.split('-');
+  return `${day}-${m}-${y}`;
+}
+function unitClass(u) {
+  if (u === 'Sanvest') return 'unit-Sanvest';
+  if (u === 'ICEMM') return 'unit-ICEMM';
+  if (u === 'LAR') return 'unit-LAR';
+  if (u === 'OLÁ') return 'unit-OLA';
+  if (u === 'Atémpora') return 'unit-Atempora';
+  if (u === 'Gerencia de Proyectos') return 'unit-Gerencia';
+  return '';
+}
+function monthlyCost(s) {
+  const c = Number(s.cost) || 0;
+  if (s.status === 'dado de baja') return 0;
+  return s.costPeriod === 'anual' ? c / 12 : c;
+}
+function statusBadge(s, prefix) {
+  const map = {
+    'activo': 'badge-activo', 'en implementación': 'badge-implementacion',
+    'pendiente': 'badge-pendiente', 'dado de baja': 'badge-baja',
+    'programada': 'badge-programada', 'en curso': 'badge-curso',
+    'completada': 'badge-completada'
+  };
+  return `<span class="badge ${map[s] || ''}">${s}</span>`;
+}
+
+// ============== TABS ==============
+document.querySelectorAll('.tab').forEach(t => {
+  t.onclick = () => {
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('active'));
+    t.classList.add('active');
+    state.activeTab = t.dataset.panel;
+    state.editing = null;
+    render();
+  };
+});
+
+// ============== KPIs ==============
+function renderKPIs() {
+  const sw = state.software;
+  const activos = sw.filter(s => s.status === 'activo').length;
+  document.getElementById('kpiSoftware').textContent = activos;
+  document.getElementById('kpiSoftwareSub').textContent = `${sw.length} contratados en total`;
+
+  const costMonthly = sw.reduce((acc, s) => acc + monthlyCost(s), 0);
+  document.getElementById('kpiCost').textContent = fmtCLP(costMonthly);
+  document.getElementById('kpiCostSub').textContent = `CLP / mes · ${fmtCLP(costMonthly * 12)} anualizado`;
+
+  const tr = state.trainings;
+  const completed = tr.filter(t => t.status === 'completada').length;
+  const scheduled = tr.filter(t => t.status === 'programada').length;
+  document.getElementById('kpiTrainings').textContent = tr.length;
+  document.getElementById('kpiTrainingsSub').textContent = `${completed} completadas · ${scheduled} programadas`;
+
+  const g = state.gantt;
+  const totalProgress = g.length ? g.reduce((a, b) => a + (Number(b.progress) || 0), 0) / g.length : 0;
+  const completedTasks = g.filter(t => t.status === 'completada').length;
+  document.getElementById('kpiProgress').textContent = Math.round(totalProgress) + '%';
+  document.getElementById('kpiProgressSub').textContent = `${completedTasks} de ${g.length} tareas`;
+
+  if (state.planStart) {
+    const start = new Date(state.planStart);
+    const end = new Date(start);
+    end.setDate(end.getDate() + 100);
+    const today = new Date();
+    const total = 100;
+    const elapsed = Math.floor((today - start) / 86400000);
+    const remaining = Math.max(0, total - elapsed);
+    document.getElementById('kpiDays').textContent = remaining;
+    document.getElementById('kpiDaysSub').textContent = elapsed < 0
+      ? `Inicia en ${-elapsed} días`
+      : (elapsed > total ? 'Plan finalizado' : `${elapsed} días transcurridos`);
+  } else {
+    document.getElementById('kpiDays').textContent = '—';
+    document.getElementById('kpiDaysSub').textContent = 'Define fecha de inicio';
+  }
+}
+
+// ============== RENDER MAIN ==============
+function render() {
+  renderKPIs();
+  const c = document.getElementById('content');
+  if (state.activeTab === 'software') c.innerHTML = renderSoftware();
+  else if (state.activeTab === 'trainings') c.innerHTML = renderTrainings();
+  else if (state.activeTab === 'gantt') c.innerHTML = renderGantt();
+  attachListeners();
+}
+
+// ============== SOFTWARE ==============
+function renderSoftware() {
+  const items = state.software.filter(s => {
+    if (state.filters.swUnit && s.unit !== state.filters.swUnit) return false;
+    if (state.filters.swStatus && s.status !== state.filters.swStatus) return false;
+    if (state.filters.swSearch) {
+      const q = state.filters.swSearch.toLowerCase();
+      if (!`${s.name} ${s.vendor} ${s.notes || ''}`.toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Cost by unit
+  const byUnit = {};
+  state.software.forEach(s => {
+    byUnit[s.unit] = (byUnit[s.unit] || 0) + monthlyCost(s);
+  });
+  const costCardsHtml = Object.entries(byUnit)
+    .sort((a, b) => b[1] - a[1])
+    .map(([u, v]) => `
+      <div class="cost-card">
+        <div class="label">${u}</div>
+        <div class="value">${fmtCLP(v)}</div>
+        <div class="sub">${state.software.filter(s => s.unit === u).length} software · /mes</div>
+      </div>`).join('');
+
+  const editor = state.editing && state.editing.module === 'software'
+    ? renderSoftwareEditor(state.editing.data) : '';
+
+  const tbody = items.length ? items.map(s => `
+    <tr>
+      <td><strong>${s.name}</strong>${s.notes ? `<div class="muted" style="font-size:11px;margin-top:2px">${s.notes}</div>` : ''}</td>
+      <td>${s.vendor || '—'}</td>
+      <td><span class="unit-chip ${unitClass(s.unit)}">${s.unit}</span></td>
+      <td>${s.responsible || '<span class="muted">—</span>'}</td>
+      <td class="nowrap right">${fmtCLP(s.cost)}<div class="muted" style="font-size:10px">${s.costPeriod}</div></td>
+      <td class="nowrap right">${fmtCLP(monthlyCost(s))}</td>
+      <td class="nowrap">${fmtDate(s.renewalDate)}</td>
+      <td>${statusBadge(s.status)}</td>
+      <td class="row-actions">
+        <button class="btn-icon" onclick="editSoftware('${s.id}')" title="Editar">✎</button>
+        <button class="btn-icon" onclick="deleteSoftware('${s.id}')" title="Eliminar">🗑</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="9"><div class="empty"><h3>Sin software</h3><p>Agrega el primero con el botón de arriba.</p></div></td></tr>`;
+
+  return `
+    ${costCardsHtml ? `<div class="cost-breakdown">${costCardsHtml}</div>` : ''}
+    <div class="toolbar">
+      <input type="text" placeholder="Buscar..." value="${state.filters.swSearch}" oninput="state.filters.swSearch=this.value;render()">
+      <select onchange="state.filters.swUnit=this.value;render()">
+        <option value="">Todas las unidades</option>
+        ${UNITS.map(u => `<option value="${u}" ${state.filters.swUnit === u ? 'selected' : ''}>${u}</option>`).join('')}
+      </select>
+      <select onchange="state.filters.swStatus=this.value;render()">
+        <option value="">Todos los estados</option>
+        ${SW_STATUS.map(u => `<option value="${u}" ${state.filters.swStatus === u ? 'selected' : ''}>${u}</option>`).join('')}
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('software')">↓ CSV</button>
+      <button class="btn btn-sm" onclick="addSoftware()">+ Agregar</button>
+    </div>
+    ${editor}
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Software</th><th>Proveedor</th><th>Unidad</th><th>Responsable</th>
+          <th class="right">Costo</th><th class="right">$/mes</th>
+          <th>Renovación</th><th>Estado</th><th></th>
+        </tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderSoftwareEditor(d) {
+  return `
+    <div class="editor">
+      <h4>${d.id ? 'Editar' : 'Agregar'} software</h4>
+      <div class="form-grid">
+        <div class="field"><label>Nombre *</label><input type="text" id="ed_name" value="${d.name || ''}"></div>
+        <div class="field"><label>Proveedor</label><input type="text" id="ed_vendor" value="${d.vendor || ''}"></div>
+        <div class="field"><label>Unidad de negocio *</label>
+          <select id="ed_unit">${UNITS.map(u => `<option value="${u}" ${d.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Responsable interno</label><input type="text" id="ed_responsible" value="${d.responsible || ''}"></div>
+        <div class="field"><label>Costo (CLP)</label><input type="number" id="ed_cost" value="${d.cost || ''}"></div>
+        <div class="field"><label>Periodicidad</label>
+          <select id="ed_costPeriod">
+            <option value="mensual" ${d.costPeriod === 'mensual' ? 'selected' : ''}>Mensual</option>
+            <option value="anual" ${d.costPeriod === 'anual' ? 'selected' : ''}>Anual</option>
+          </select>
+        </div>
+        <div class="field"><label>Fecha contratación</label><input type="date" id="ed_contractDate" value="${d.contractDate || ''}"></div>
+        <div class="field"><label>Fecha renovación</label><input type="date" id="ed_renewalDate" value="${d.renewalDate || ''}"></div>
+        <div class="field"><label>Estado</label>
+          <select id="ed_status">${SW_STATUS.map(s => `<option value="${s}" ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field field-full"><label>Notas</label><textarea id="ed_notes">${d.notes || ''}</textarea></div>
+      </div>
+      <div class="editor-actions">
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">Cancelar</button>
+        <button class="btn btn-sm" onclick="saveSoftware()">Guardar</button>
+      </div>
+    </div>`;
+}
+
+function addSoftware() {
+  state.editing = { module: 'software', data: { unit: 'Sanvest', costPeriod: 'mensual', status: 'activo' } };
+  render();
+}
+function editSoftware(id) {
+  const s = state.software.find(x => x.id === id);
+  if (!s) return;
+  state.editing = { module: 'software', data: { ...s } };
+  render();
+}
+async function saveSoftware() {
+  const get = id => document.getElementById(id).value;
+  const isNew = !state.editing.data.id;
+  const data = {
+    id: state.editing.data.id || uid(),
+    name: get('ed_name').trim(),
+    vendor: get('ed_vendor').trim(),
+    unit: get('ed_unit'),
+    responsible: get('ed_responsible').trim(),
+    cost: Number(get('ed_cost')) || 0,
+    costPeriod: get('ed_costPeriod'),
+    contractDate: get('ed_contractDate'),
+    renewalDate: get('ed_renewalDate'),
+    status: get('ed_status'),
+    notes: get('ed_notes').trim()
+  };
+  if (!data.name) { alert('El nombre es obligatorio'); return; }
+  try {
+    if (isNew) {
+      const created = await api('POST', '/api/software', data);
+      state.software.push(created);
+    } else {
+      const updated = await api('PUT', `/api/software/${data.id}`, data);
+      const idx = state.software.findIndex(x => x.id === data.id);
+      state.software[idx] = updated;
+    }
+    state.editing = null;
+    render();
+  } catch (e) { alert('Error guardando: ' + e.message); }
+}
+async function deleteSoftware(id) {
+  const s = state.software.find(x => x.id === id);
+  if (!s) return;
+  openModal('Eliminar software', `¿Eliminar "${s.name}"? Esta acción no se puede deshacer.`, async () => {
+    try {
+      await api('DELETE', `/api/software/${id}`);
+      state.software = state.software.filter(x => x.id !== id);
+      render();
+    } catch (e) { alert('Error eliminando: ' + e.message); }
+  });
+}
+
+// ============== TRAININGS ==============
+function renderTrainings() {
+  const items = state.trainings;
+  const editor = state.editing && state.editing.module === 'trainings'
+    ? renderTrainingEditor(state.editing.data) : '';
+  const tbody = items.length ? items.map(t => `
+    <tr>
+      <td><strong>${t.name}</strong>${t.notes ? `<div class="muted" style="font-size:11px;margin-top:2px">${t.notes}</div>` : ''}</td>
+      <td>${t.type || '—'}</td>
+      <td>${t.facilitator || '—'}</td>
+      <td class="nowrap">${fmtDate(t.date)}</td>
+      <td>${t.duration || '—'}</td>
+      <td>${t.attendees || '—'}</td>
+      <td>${t.attendance ? `<div class="progress-inline"><div class="progress-bar"><div class="progress-bar-fill" style="width:${t.attendance}%"></div></div><span class="muted">${t.attendance}%</span></div>` : '<span class="muted">—</span>'}</td>
+      <td>${statusBadge(t.status)}</td>
+      <td class="row-actions">
+        <button class="btn-icon" onclick="editTraining('${t.id}')" title="Editar">✎</button>
+        <button class="btn-icon" onclick="deleteTraining('${t.id}')" title="Eliminar">🗑</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="9"><div class="empty"><h3>Sin capacitaciones</h3><p>Agrega la primera con el botón de arriba.</p></div></td></tr>`;
+
+  return `
+    <div class="toolbar">
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('trainings')">↓ CSV</button>
+      <button class="btn btn-sm" onclick="addTraining()">+ Agregar</button>
+    </div>
+    ${editor}
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Capacitación</th><th>Tipo</th><th>Facilitador</th><th>Fecha</th>
+          <th>Duración</th><th>Asistentes</th><th>% Asistencia</th>
+          <th>Estado</th><th></th>
+        </tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderTrainingEditor(d) {
+  return `
+    <div class="editor">
+      <h4>${d.id ? 'Editar' : 'Agregar'} capacitación</h4>
+      <div class="form-grid">
+        <div class="field"><label>Nombre *</label><input type="text" id="ed_name" value="${d.name || ''}"></div>
+        <div class="field"><label>Tipo</label>
+          <select id="ed_type">${TR_TYPES.map(t => `<option value="${t}" ${d.type === t ? 'selected' : ''}>${t}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Facilitador</label><input type="text" id="ed_facilitator" value="${d.facilitator || ''}"></div>
+        <div class="field"><label>Fecha</label><input type="date" id="ed_date" value="${d.date || ''}"></div>
+        <div class="field"><label>Duración (hrs)</label><input type="text" id="ed_duration" value="${d.duration || ''}"></div>
+        <div class="field"><label>Asistentes / equipo</label><input type="text" id="ed_attendees" value="${d.attendees || ''}"></div>
+        <div class="field"><label>% Asistencia</label><input type="number" min="0" max="100" id="ed_attendance" value="${d.attendance || ''}"></div>
+        <div class="field"><label>Estado</label>
+          <select id="ed_status">${TR_STATUS.map(s => `<option value="${s}" ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field field-full"><label>Notas</label><textarea id="ed_notes">${d.notes || ''}</textarea></div>
+      </div>
+      <div class="editor-actions">
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">Cancelar</button>
+        <button class="btn btn-sm" onclick="saveTraining()">Guardar</button>
+      </div>
+    </div>`;
+}
+
+function addTraining() {
+  state.editing = { module: 'trainings', data: { type: 'técnica', status: 'programada' } };
+  render();
+}
+function editTraining(id) {
+  const t = state.trainings.find(x => x.id === id);
+  if (!t) return;
+  state.editing = { module: 'trainings', data: { ...t } };
+  render();
+}
+async function saveTraining() {
+  const get = id => document.getElementById(id).value;
+  const isNew = !state.editing.data.id;
+  const data = {
+    id: state.editing.data.id || uid(),
+    name: get('ed_name').trim(),
+    type: get('ed_type'),
+    facilitator: get('ed_facilitator').trim(),
+    date: get('ed_date'),
+    duration: get('ed_duration').trim(),
+    attendees: get('ed_attendees').trim(),
+    attendance: get('ed_attendance') ? Number(get('ed_attendance')) : null,
+    status: get('ed_status'),
+    notes: get('ed_notes').trim()
+  };
+  if (!data.name) { alert('El nombre es obligatorio'); return; }
+  try {
+    if (isNew) {
+      const created = await api('POST', '/api/trainings', data);
+      state.trainings.push(created);
+    } else {
+      const updated = await api('PUT', `/api/trainings/${data.id}`, data);
+      const idx = state.trainings.findIndex(x => x.id === data.id);
+      state.trainings[idx] = updated;
+    }
+    state.editing = null;
+    render();
+  } catch (e) { alert('Error guardando: ' + e.message); }
+}
+async function deleteTraining(id) {
+  const t = state.trainings.find(x => x.id === id);
+  if (!t) return;
+  openModal('Eliminar capacitación', `¿Eliminar "${t.name}"?`, async () => {
+    try {
+      await api('DELETE', `/api/trainings/${id}`);
+      state.trainings = state.trainings.filter(x => x.id !== id);
+      render();
+    } catch (e) { alert('Error eliminando: ' + e.message); }
+  });
+}
+
+// ============== GANTT / PLAN 100 DÍAS ==============
+function renderGantt() {
+  const editor = state.editing && state.editing.module === 'gantt'
+    ? renderGanttEditor(state.editing.data) : '';
+
+  const planStartHtml = `
+    <div class="plan-controls">
+      <div>Fecha inicio plan: <strong>${state.planStart ? fmtDate(state.planStart) : 'No definida'}</strong></div>
+      <input type="date" value="${state.planStart || ''}" onchange="setPlanStart(this.value)">
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('gantt')">↓ CSV</button>
+      <button class="btn btn-sm" onclick="addTask()" ${!state.planStart ? 'disabled style="opacity:.5;cursor:not-allowed"' : ''}>+ Agregar tarea</button>
+    </div>`;
+
+  if (!state.planStart) {
+    return planStartHtml + `<div class="empty"><h3>Define la fecha de inicio del plan</h3><p>Ingresa la fecha arriba para activar la Gantt.</p></div>` + editor;
+  }
+
+  const start = new Date(state.planStart);
+  const end = new Date(start); end.setDate(end.getDate() + 100);
+  const today = new Date();
+  const total = end - start;
+  const todayPct = Math.max(0, Math.min(100, ((today - start) / total) * 100));
+
+  const tasks = state.gantt;
+  const rows = tasks.length ? tasks.map(t => {
+    const ts = new Date(t.startDate);
+    const te = new Date(t.endDate);
+    const left = Math.max(0, ((ts - start) / total) * 100);
+    const width = Math.max(1, ((te - ts) / total) * 100);
+    const isLate = t.status !== 'completada' && te < today;
+    const cls = t.status === 'completada' ? 'done' : (isLate ? 'late' : '');
+    return `
+      <div class="gantt-row">
+        <div class="gantt-label">
+          <strong>${t.name}</strong>
+          <div class="sub">${t.responsible || '—'} · ${t.progress || 0}% · ${statusBadge(t.status)}
+            <button class="btn-icon" onclick="editTask('${t.id}')">✎</button>
+            <button class="btn-icon" onclick="deleteTask('${t.id}')">🗑</button>
+          </div>
+        </div>
+        <div class="gantt-track">
+          <div class="gantt-bar ${cls}" style="left:${left}%;width:${width}%">${t.progress || 0}%</div>
+          <div class="gantt-today" style="left:${todayPct}%"></div>
+        </div>
+      </div>`;
+  }).join('') : `<div class="empty"><h3>Sin tareas</h3><p>Agrega la primera con el botón.</p></div>`;
+
+  const axisLabels = [];
+  for (let i = 0; i <= 4; i++) {
+    const d = new Date(start);
+    d.setDate(d.getDate() + Math.round((100 / 4) * i));
+    axisLabels.push(d.toLocaleDateString('es-CL', { day: '2-digit', month: 'short' }));
+  }
+
+  return planStartHtml + editor + `
+    <div class="gantt-axis">
+      <div></div>
+      <div class="gantt-axis-labels">${axisLabels.map(l => `<span>${l}</span>`).join('')}</div>
+    </div>
+    <div class="gantt">${rows}</div>`;
+}
+
+function renderGanttEditor(d) {
+  return `
+    <div class="editor">
+      <h4>${d.id ? 'Editar' : 'Agregar'} tarea</h4>
+      <div class="form-grid">
+        <div class="field"><label>Hito / tarea *</label><input type="text" id="ed_name" value="${d.name || ''}"></div>
+        <div class="field"><label>Responsable</label><input type="text" id="ed_responsible" value="${d.responsible || ''}"></div>
+        <div class="field"><label>Fecha inicio *</label><input type="date" id="ed_startDate" value="${d.startDate || ''}"></div>
+        <div class="field"><label>Fecha fin *</label><input type="date" id="ed_endDate" value="${d.endDate || ''}"></div>
+        <div class="field"><label>% Avance</label><input type="number" min="0" max="100" id="ed_progress" value="${d.progress || 0}"></div>
+        <div class="field"><label>Estado</label>
+          <select id="ed_status">${TASK_STATUS.map(s => `<option value="${s}" ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field field-full"><label>Notas</label><textarea id="ed_notes">${d.notes || ''}</textarea></div>
+      </div>
+      <div class="editor-actions">
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">Cancelar</button>
+        <button class="btn btn-sm" onclick="saveTask()">Guardar</button>
+      </div>
+    </div>`;
+}
+
+async function setPlanStart(v) {
+  if (!v) return;
+  try {
+    await api('PUT', '/api/settings', { planStart: v });
+    state.planStart = v;
+    render();
+  } catch (e) { alert('Error guardando fecha: ' + e.message); }
+}
+function addTask() {
+  if (!state.planStart) return;
+  const start = state.planStart;
+  const end = new Date(start);
+  end.setDate(end.getDate() + 7);
+  state.editing = {
+    module: 'gantt',
+    data: { startDate: start, endDate: end.toISOString().split('T')[0], status: 'pendiente', progress: 0 }
+  };
+  render();
+}
+function editTask(id) {
+  const t = state.gantt.find(x => x.id === id);
+  if (!t) return;
+  state.editing = { module: 'gantt', data: { ...t } };
+  render();
+}
+async function saveTask() {
+  const get = id => document.getElementById(id).value;
+  const isNew = !state.editing.data.id;
+  const data = {
+    id: state.editing.data.id || uid(),
+    name: get('ed_name').trim(),
+    responsible: get('ed_responsible').trim(),
+    startDate: get('ed_startDate'),
+    endDate: get('ed_endDate'),
+    progress: Number(get('ed_progress')) || 0,
+    status: get('ed_status'),
+    notes: get('ed_notes').trim()
+  };
+  if (!data.name || !data.startDate || !data.endDate) { alert('Nombre y fechas son obligatorios'); return; }
+  try {
+    if (isNew) {
+      const created = await api('POST', '/api/gantt', data);
+      state.gantt.push(created);
+    } else {
+      const updated = await api('PUT', `/api/gantt/${data.id}`, data);
+      const idx = state.gantt.findIndex(x => x.id === data.id);
+      state.gantt[idx] = updated;
+    }
+    state.gantt.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    state.editing = null;
+    render();
+  } catch (e) { alert('Error guardando: ' + e.message); }
+}
+async function deleteTask(id) {
+  const t = state.gantt.find(x => x.id === id);
+  if (!t) return;
+  openModal('Eliminar tarea', `¿Eliminar "${t.name}"?`, async () => {
+    try {
+      await api('DELETE', `/api/gantt/${id}`);
+      state.gantt = state.gantt.filter(x => x.id !== id);
+      render();
+    } catch (e) { alert('Error eliminando: ' + e.message); }
+  });
+}
+
+function cancelEdit() { state.editing = null; render(); }
+function attachListeners() {}
+
+// ============== MODAL ==============
+function openModal(title, text, onConfirm) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalText').textContent = text;
+  document.getElementById('modalBg').classList.add('active');
+  document.getElementById('modalConfirm').onclick = () => { onConfirm(); closeModal(); };
+}
+function closeModal() {
+  document.getElementById('modalBg').classList.remove('active');
+}
+
+// ============== EXPORT / IMPORT ==============
+function exportCSV(module) {
+  let items, headers;
+  if (module === 'software') {
+    items = state.software;
+    headers = ['name', 'vendor', 'unit', 'responsible', 'cost', 'costPeriod', 'contractDate', 'renewalDate', 'status', 'notes'];
+  } else if (module === 'trainings') {
+    items = state.trainings;
+    headers = ['name', 'type', 'facilitator', 'date', 'duration', 'attendees', 'attendance', 'status', 'notes'];
+  } else {
+    items = state.gantt;
+    headers = ['name', 'responsible', 'startDate', 'endDate', 'progress', 'status', 'notes'];
+  }
+  if (!items.length) { alert('No hay datos para exportar'); return; }
+  const rows = items.map(item => headers.map(h => {
+    const v = String(item[h] ?? '').replace(/"/g, '""');
+    return `"${v}"`;
+  }).join(','));
+  const csv = headers.join(',') + '\n' + rows.join('\n');
+  const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `sanvest-${module}-${todayStr()}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function exportAll() {
+  try {
+    const data = await api('GET', '/api/export');
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `sanvest-td-backup-${todayStr()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (e) { alert('Error exportando: ' + e.message); }
+}
+
+function importAll(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      openModal('Importar backup', `Se reemplazarán todos los datos por: ${data.software?.length || 0} software, ${data.trainings?.length || 0} capacitaciones, ${data.gantt?.length || 0} tareas.`, async () => {
+        try {
+          await api('POST', '/api/import', data);
+          await loadAll();
+        } catch (err) { alert('Error importando: ' + err.message); }
+      });
+    } catch (err) {
+      alert('Error al leer el archivo: ' + err.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function logout() {
+  localStorage.removeItem('td:token');
+  location.reload();
+}
+
+// ============== INIT ==============
+loadAll();
+</script>
+</body>
+</html>

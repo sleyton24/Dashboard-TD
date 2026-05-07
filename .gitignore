@@ -1,0 +1,12 @@
+.env
+backend/data/
+backend/__pycache__/
+backend/app/__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+.idea/
+.vscode/
+caddy_data/
+caddy_config/
