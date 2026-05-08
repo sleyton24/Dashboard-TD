@@ -78,6 +78,18 @@ class GanttTask(Base):
     notes = Column(String, default="")
 
 
+class Project(Base):
+    __tablename__ = "projects"
+    id = Column(String, primary_key=True)
+    name = Column(String, nullable=False)
+    unit = Column(String, default="")
+    responsible = Column(String, default="")
+    status = Column(String, default="pendiente")
+    startDate = Column(String, default="")
+    endDate = Column(String, default="")
+    notes = Column(String, default="")
+
+
 class Setting(Base):
     __tablename__ = "settings"
     key = Column(String, primary_key=True)
@@ -153,6 +165,18 @@ class GanttSchema(BaseModel):
     notes: str = ""
 
 
+class ProjectSchema(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: str
+    name: str
+    unit: str = ""
+    responsible: str = ""
+    status: str = "pendiente"
+    startDate: str = ""
+    endDate: str = ""
+    notes: str = ""
+
+
 class SettingsSchema(BaseModel):
     planStart: Optional[str] = None
 
@@ -198,6 +222,8 @@ def seed_if_empty():
             db.add(Training(**t))
         for g in data.get("gantt", []):
             db.add(GanttTask(**g))
+        for p in data.get("projects", []):
+            db.add(Project(**p))
         for k, v in data.get("settings", {}).items():
             db.add(Setting(key=k, value=v))
         db.commit()
@@ -410,6 +436,63 @@ def delete_gantt(
 
 
 # ─────────────────────────────────────────────────────────────
+# Endpoints — Projects
+# ─────────────────────────────────────────────────────────────
+@app.get("/api/projects", response_model=list[ProjectSchema])
+def list_projects(_=Depends(require_token), db: Session = Depends(get_db)):
+    return db.query(Project).all()
+
+
+@app.post("/api/projects", response_model=ProjectSchema)
+def create_project(
+    item: ProjectSchema,
+    _=Depends(require_token),
+    db: Session = Depends(get_db),
+):
+    if db.get(Project, item.id):
+        raise HTTPException(409, f"id {item.id} already exists")
+    obj = Project(**item.model_dump())
+    db.add(obj)
+    log_audit(db, "CREATE", "project", item.id, after=item.model_dump())
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@app.put("/api/projects/{item_id}", response_model=ProjectSchema)
+def update_project(
+    item_id: str,
+    item: ProjectSchema,
+    _=Depends(require_token),
+    db: Session = Depends(get_db),
+):
+    obj = db.get(Project, item_id)
+    if not obj:
+        raise HTTPException(404, "Not found")
+    before = ProjectSchema.model_validate(obj).model_dump()
+    for k, v in item.model_dump().items():
+        setattr(obj, k, v)
+    log_audit(db, "UPDATE", "project", item_id, before=before, after=item.model_dump())
+    db.commit()
+    db.refresh(obj)
+    return obj
+
+
+@app.delete("/api/projects/{item_id}")
+def delete_project(
+    item_id: str, _=Depends(require_token), db: Session = Depends(get_db)
+):
+    obj = db.get(Project, item_id)
+    if not obj:
+        raise HTTPException(404, "Not found")
+    before = ProjectSchema.model_validate(obj).model_dump()
+    db.delete(obj)
+    log_audit(db, "DELETE", "project", item_id, before=before)
+    db.commit()
+    return {"deleted": item_id}
+
+
+# ─────────────────────────────────────────────────────────────
 # Endpoints — Settings
 # ─────────────────────────────────────────────────────────────
 @app.get("/api/settings", response_model=SettingsSchema)
@@ -451,6 +534,7 @@ def export_all(_=Depends(require_token), db: Session = Depends(get_db)):
         "software": [SoftwareSchema.model_validate(s).model_dump() for s in db.query(Software).all()],
         "trainings": [TrainingSchema.model_validate(t).model_dump() for t in db.query(Training).all()],
         "gantt": [GanttSchema.model_validate(g).model_dump() for g in db.query(GanttTask).all()],
+        "projects": [ProjectSchema.model_validate(p).model_dump() for p in db.query(Project).all()],
         "settings": {r.key: r.value for r in db.query(Setting).all()},
     }
 
@@ -466,11 +550,13 @@ def import_all(
         "software": db.query(Software).count(),
         "trainings": db.query(Training).count(),
         "gantt": db.query(GanttTask).count(),
+        "projects": db.query(Project).count(),
         "settings": db.query(Setting).count(),
     }
     db.query(Software).delete()
     db.query(Training).delete()
     db.query(GanttTask).delete()
+    db.query(Project).delete()
     db.query(Setting).delete()
     for s in payload.get("software", []):
         db.add(Software(**s))
@@ -478,12 +564,15 @@ def import_all(
         db.add(Training(**t))
     for g in payload.get("gantt", []):
         db.add(GanttTask(**g))
+    for p in payload.get("projects", []):
+        db.add(Project(**p))
     for k, v in payload.get("settings", {}).items():
         db.add(Setting(key=k, value=v))
     counts_after = {
         "software": len(payload.get("software", [])),
         "trainings": len(payload.get("trainings", [])),
         "gantt": len(payload.get("gantt", [])),
+        "projects": len(payload.get("projects", [])),
         "settings": len(payload.get("settings", {})),
     }
     log_audit(db, "IMPORT", "bulk", "", before=counts_before, after=counts_after)
