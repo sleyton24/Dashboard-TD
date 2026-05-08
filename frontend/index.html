@@ -223,6 +223,8 @@
   .badge-programada { background: rgba(55,150,170,.18); color: var(--info); }
   .badge-curso { background: rgba(250,207,34,.18); color: var(--warning); }
   .badge-completada { background: var(--green-soft); color: var(--sanvest-green); }
+  .badge-completado { background: var(--green-soft); color: var(--sanvest-green); }
+  .badge-pausado { background: rgba(239,115,27,.18); color: var(--orange); }
 
   /* Unit chip */
   .unit-chip {
@@ -502,6 +504,7 @@
   <button class="tab active" data-panel="software">Software</button>
   <button class="tab" data-panel="trainings">Capacitaciones</button>
   <button class="tab" data-panel="gantt">Plan 100 días</button>
+  <button class="tab" data-panel="projects">Proyectos</button>
 </div>
 
 <div id="content"></div>
@@ -524,15 +527,17 @@ const SW_STATUS = ['activo', 'en implementación', 'pendiente', 'dado de baja'];
 const TR_TYPES = ['técnica', 'herramienta', 'soft skill'];
 const TR_STATUS = ['programada', 'en curso', 'completada'];
 const TASK_STATUS = ['pendiente', 'en curso', 'completada'];
+const PROJECT_STATUS = ['pendiente', 'en curso', 'completado', 'pausado'];
 
 // ============== STATE ==============
 const state = {
   software: [],
   trainings: [],
   gantt: [],
+  projects: [],
   planStart: null,
   activeTab: 'software',
-  filters: { swUnit: '', swStatus: '', swSearch: '' },
+  filters: { swUnit: '', swStatus: '', swSearch: '', prUnit: '', prStatus: '' },
   editing: null
 };
 
@@ -575,15 +580,17 @@ async function api(method, path, body = null) {
 
 async function loadAll() {
   try {
-    const [software, trainings, gantt, settings] = await Promise.all([
+    const [software, trainings, gantt, projects, settings] = await Promise.all([
       api('GET', '/api/software'),
       api('GET', '/api/trainings'),
       api('GET', '/api/gantt'),
+      api('GET', '/api/projects'),
       api('GET', '/api/settings')
     ]);
     state.software = software;
     state.trainings = trainings;
     state.gantt = gantt;
+    state.projects = projects;
     state.planStart = settings?.planStart || null;
     render();
   } catch (e) {
@@ -621,7 +628,8 @@ function statusBadge(s, prefix) {
     'activo': 'badge-activo', 'en implementación': 'badge-implementacion',
     'pendiente': 'badge-pendiente', 'dado de baja': 'badge-baja',
     'programada': 'badge-programada', 'en curso': 'badge-curso',
-    'completada': 'badge-completada'
+    'completada': 'badge-completada',
+    'completado': 'badge-completado', 'pausado': 'badge-pausado'
   };
   return `<span class="badge ${map[s] || ''}">${s}</span>`;
 }
@@ -685,6 +693,7 @@ function render() {
   if (state.activeTab === 'software') c.innerHTML = renderSoftware();
   else if (state.activeTab === 'trainings') c.innerHTML = renderTrainings();
   else if (state.activeTab === 'gantt') c.innerHTML = renderGantt();
+  else if (state.activeTab === 'projects') c.innerHTML = renderProjects();
   attachListeners();
 }
 
@@ -1113,6 +1122,145 @@ async function deleteTask(id) {
   });
 }
 
+// ============== PROJECTS ==============
+function renderProjects() {
+  const items = state.projects.filter(p => {
+    if (state.filters.prUnit && p.unit !== state.filters.prUnit) return false;
+    if (state.filters.prStatus && p.status !== state.filters.prStatus) return false;
+    return true;
+  });
+
+  // Conteo por unidad
+  const byUnit = {};
+  state.projects.forEach(p => {
+    byUnit[p.unit] = (byUnit[p.unit] || 0) + 1;
+  });
+  const unitCardsHtml = Object.entries(byUnit)
+    .sort((a, b) => b[1] - a[1])
+    .map(([u, n]) => `
+      <div class="cost-card">
+        <div class="label">${u || '—'}</div>
+        <div class="value">${n}</div>
+        <div class="sub">proyecto${n === 1 ? '' : 's'}</div>
+      </div>`).join('');
+
+  const editor = state.editing && state.editing.module === 'projects'
+    ? renderProjectEditor(state.editing.data) : '';
+
+  const tbody = items.length ? items.map(p => `
+    <tr>
+      <td><strong>${p.name}</strong>${p.notes ? `<div class="muted" style="font-size:11px;margin-top:2px">${p.notes}</div>` : ''}</td>
+      <td><span class="unit-chip ${unitClass(p.unit)}">${p.unit || '—'}</span></td>
+      <td>${p.responsible || '<span class="muted">—</span>'}</td>
+      <td class="nowrap">${fmtDate(p.startDate)}</td>
+      <td class="nowrap">${fmtDate(p.endDate)}</td>
+      <td>${statusBadge(p.status)}</td>
+      <td class="row-actions">
+        <button class="btn-icon" onclick="editProject('${p.id}')" title="Editar">✎</button>
+        <button class="btn-icon" onclick="deleteProject('${p.id}')" title="Eliminar">🗑</button>
+      </td>
+    </tr>`).join('') : `<tr><td colspan="7"><div class="empty"><h3>Sin proyectos</h3><p>Agrega el primero con el botón de arriba.</p></div></td></tr>`;
+
+  return `
+    ${unitCardsHtml ? `<div class="cost-breakdown">${unitCardsHtml}</div>` : ''}
+    <div class="toolbar">
+      <select onchange="state.filters.prUnit=this.value;render()">
+        <option value="">Todas las unidades</option>
+        ${UNITS.map(u => `<option value="${u}" ${state.filters.prUnit === u ? 'selected' : ''}>${u}</option>`).join('')}
+      </select>
+      <select onchange="state.filters.prStatus=this.value;render()">
+        <option value="">Todos los estados</option>
+        ${PROJECT_STATUS.map(s => `<option value="${s}" ${state.filters.prStatus === s ? 'selected' : ''}>${s}</option>`).join('')}
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-secondary btn-sm" onclick="exportCSV('projects')">↓ CSV</button>
+      <button class="btn btn-sm" onclick="addProject()">+ Agregar</button>
+    </div>
+    ${editor}
+    <div class="table-wrap">
+      <table>
+        <thead><tr>
+          <th>Proyecto</th><th>Unidad</th><th>Responsable</th>
+          <th>Inicio</th><th>Fin estimado</th><th>Estado</th><th></th>
+        </tr></thead>
+        <tbody>${tbody}</tbody>
+      </table>
+    </div>`;
+}
+
+function renderProjectEditor(d) {
+  return `
+    <div class="editor">
+      <h4>${d.id ? 'Editar' : 'Agregar'} proyecto</h4>
+      <div class="form-grid">
+        <div class="field"><label>Nombre *</label><input type="text" id="ed_name" value="${d.name || ''}"></div>
+        <div class="field"><label>Unidad de negocio *</label>
+          <select id="ed_unit">${UNITS.map(u => `<option value="${u}" ${d.unit === u ? 'selected' : ''}>${u}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Responsable</label><input type="text" id="ed_responsible" value="${d.responsible || ''}"></div>
+        <div class="field"><label>Estado</label>
+          <select id="ed_status">${PROJECT_STATUS.map(s => `<option value="${s}" ${d.status === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
+        </div>
+        <div class="field"><label>Fecha inicio</label><input type="date" id="ed_startDate" value="${d.startDate || ''}"></div>
+        <div class="field"><label>Fecha fin estimada</label><input type="date" id="ed_endDate" value="${d.endDate || ''}"></div>
+        <div class="field field-full"><label>Descripción / notas</label><textarea id="ed_notes">${d.notes || ''}</textarea></div>
+      </div>
+      <div class="editor-actions">
+        <button class="btn btn-secondary btn-sm" onclick="cancelEdit()">Cancelar</button>
+        <button class="btn btn-sm" onclick="saveProject()">Guardar</button>
+      </div>
+    </div>`;
+}
+
+function addProject() {
+  state.editing = { module: 'projects', data: { unit: 'Sanvest', status: 'pendiente' } };
+  render();
+}
+function editProject(id) {
+  const p = state.projects.find(x => x.id === id);
+  if (!p) return;
+  state.editing = { module: 'projects', data: { ...p } };
+  render();
+}
+async function saveProject() {
+  const get = id => document.getElementById(id).value;
+  const isNew = !state.editing.data.id;
+  const data = {
+    id: state.editing.data.id || uid(),
+    name: get('ed_name').trim(),
+    unit: get('ed_unit'),
+    responsible: get('ed_responsible').trim(),
+    status: get('ed_status'),
+    startDate: get('ed_startDate'),
+    endDate: get('ed_endDate'),
+    notes: get('ed_notes').trim()
+  };
+  if (!data.name) { alert('El nombre es obligatorio'); return; }
+  try {
+    if (isNew) {
+      const created = await api('POST', '/api/projects', data);
+      state.projects.push(created);
+    } else {
+      const updated = await api('PUT', `/api/projects/${data.id}`, data);
+      const idx = state.projects.findIndex(x => x.id === data.id);
+      state.projects[idx] = updated;
+    }
+    state.editing = null;
+    render();
+  } catch (e) { alert('Error guardando: ' + e.message); }
+}
+async function deleteProject(id) {
+  const p = state.projects.find(x => x.id === id);
+  if (!p) return;
+  openModal('Eliminar proyecto', `¿Eliminar "${p.name}"? Esta acción no se puede deshacer.`, async () => {
+    try {
+      await api('DELETE', `/api/projects/${id}`);
+      state.projects = state.projects.filter(x => x.id !== id);
+      render();
+    } catch (e) { alert('Error eliminando: ' + e.message); }
+  });
+}
+
 function cancelEdit() { state.editing = null; render(); }
 function attachListeners() {}
 
@@ -1136,6 +1284,9 @@ function exportCSV(module) {
   } else if (module === 'trainings') {
     items = state.trainings;
     headers = ['name', 'type', 'facilitator', 'date', 'duration', 'attendees', 'attendance', 'status', 'notes'];
+  } else if (module === 'projects') {
+    items = state.projects;
+    headers = ['name', 'unit', 'responsible', 'status', 'startDate', 'endDate', 'notes'];
   } else {
     items = state.gantt;
     headers = ['name', 'responsible', 'startDate', 'endDate', 'progress', 'status', 'notes'];
@@ -1175,7 +1326,7 @@ function importAll(event) {
   reader.onload = (e) => {
     try {
       const data = JSON.parse(e.target.result);
-      openModal('Importar backup', `Se reemplazarán todos los datos por: ${data.software?.length || 0} software, ${data.trainings?.length || 0} capacitaciones, ${data.gantt?.length || 0} tareas.`, async () => {
+      openModal('Importar backup', `Se reemplazarán todos los datos por: ${data.software?.length || 0} software, ${data.trainings?.length || 0} capacitaciones, ${data.gantt?.length || 0} tareas, ${data.projects?.length || 0} proyectos.`, async () => {
         try {
           await api('POST', '/api/import', data);
           await loadAll();
