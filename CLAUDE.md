@@ -4,10 +4,11 @@
 
 ## Qué es esto
 
-Dashboard interno para hacer seguimiento del Plan de 100 Días de Transformación Digital de Sanvest Group. Tres módulos:
+Dashboard interno para hacer seguimiento del Plan de 100 Días de Transformación Digital de Sanvest Group. Cuatro módulos:
 1. **Software** — inventario de licencias contratadas por unidad de negocio (precio, renovaciones, responsables)
 2. **Capacitaciones** — sesiones de formación en IA al equipo
 3. **Plan 100 Días** — Gantt con los 32 entregables del plan estratégico
+4. **Proyectos** — monitoreo de proyectos en que la jefatura está involucrada (por unidad, responsable, fechas, estado)
 
 Origen: nació como artifact en claude.ai con `window.storage`. Migrado a app full-stack con FastAPI + SQLite, frontend HTML+JS plano, desplegada con Docker Compose + Caddy.
 
@@ -115,6 +116,8 @@ Todos requieren header `Authorization: Bearer {ADMIN_TOKEN}` salvo `/health`.
 | POST/PUT/DELETE `/api/trainings[/{id}]` | | |
 | GET | `/api/gantt` | (idem para tareas Gantt) |
 | POST/PUT/DELETE `/api/gantt[/{id}]` | | |
+| GET | `/api/projects` | Lista los proyectos de monitoreo de jefatura |
+| POST/PUT/DELETE `/api/projects[/{id}]` | | |
 | GET | `/api/settings` | Devuelve `{planStart}` y otros settings |
 | PUT | `/api/settings` | Actualiza settings |
 | GET | `/api/export` | Devuelve JSON con todo (backup) |
@@ -164,6 +167,18 @@ status      TEXT                # 'pendiente' | 'en curso' | 'completada'
 notes       TEXT
 ```
 
+### Project
+```
+id          TEXT PRIMARY KEY    # ej. 'pr_001'
+name        TEXT NOT NULL
+unit        TEXT                # Sanvest | LAR | OLÁ | ICEMM | Atémpora | Gerencia de Proyectos
+responsible TEXT                # jefatura responsable
+status      TEXT                # 'pendiente' | 'en curso' | 'completado' | 'pausado'
+startDate   TEXT                # ISO YYYY-MM-DD
+endDate     TEXT                # ISO, fecha fin estimada
+notes       TEXT                # descripción libre
+```
+
 ### Settings (key-value)
 ```
 key   TEXT PRIMARY KEY    # 'planStart', etc.
@@ -176,7 +191,7 @@ id            INTEGER PRIMARY KEY AUTOINCREMENT
 timestamp     TEXT NOT NULL       # ISO UTC, generado en el helper log_audit()
 actor         TEXT                # 'admin' por ahora; con M365 SSO pasará a email/oid
 action        TEXT NOT NULL       # 'CREATE' | 'UPDATE' | 'DELETE' | 'IMPORT'
-resource_type TEXT NOT NULL       # 'software' | 'training' | 'gantt' | 'setting' | 'bulk'
+resource_type TEXT NOT NULL       # 'software' | 'training' | 'gantt' | 'project' | 'setting' | 'bulk'
 resource_id   TEXT                # id del recurso afectado, '' para IMPORT (resource_type='bulk')
 before        TEXT                # JSON serializado del estado previo (NULL en CREATE)
 after         TEXT                # JSON serializado del estado nuevo (NULL en DELETE)

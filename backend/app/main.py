@@ -102,7 +102,7 @@ class AuditLog(Base):
     timestamp = Column(String, nullable=False)
     actor = Column(String, default="admin")
     action = Column(String, nullable=False)            # CREATE | UPDATE | DELETE | IMPORT
-    resource_type = Column(String, nullable=False)     # software | training | gantt | setting | bulk
+    resource_type = Column(String, nullable=False)     # software | training | gantt | project | setting | bulk
     resource_id = Column(String, default="")
     before = Column(String, nullable=True)             # JSON string o None
     after = Column(String, nullable=True)
@@ -229,7 +229,9 @@ def seed_if_empty():
         db.commit()
         print(
             f"[seed] OK: {len(data.get('software', []))} software, "
+            f"{len(data.get('trainings', []))} trainings, "
             f"{len(data.get('gantt', []))} tareas, "
+            f"{len(data.get('projects', []))} proyectos, "
             f"{len(data.get('settings', {}))} settings"
         )
 
