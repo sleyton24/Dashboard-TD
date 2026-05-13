@@ -1,0 +1,26 @@
+[Unit]
+Description=JARVIS Worker (arq, ejecuta agentes en background)
+After=network.target postgresql.service redis-server.service ollama.service
+Wants=postgresql.service redis-server.service
+
+[Service]
+Type=exec
+User=@@DEPLOY_USER@@
+WorkingDirectory=@@SERVICE_DIR@@
+EnvironmentFile=@@SERVICE_DIR@@/.env
+Environment=JARVIS_ENV=prod
+Environment=PATH=/home/@@DEPLOY_USER@@/.local/bin:@@SERVICE_DIR@@/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStart=@@SERVICE_DIR@@/.venv/bin/arq jarvis_orch.workers.runner.WorkerSettings
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=jarvis-worker
+
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=full
+ProtectHome=read-only
+
+[Install]
+WantedBy=multi-user.target

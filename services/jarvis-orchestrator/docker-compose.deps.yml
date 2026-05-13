@@ -1,0 +1,42 @@
+# Dependencias mínimas para correr el orquestador en dev/verificación local.
+# Postgres + Redis aislados del panel TD existente. Ollama vive aparte
+# (se integrará al compose principal en la Fase H).
+#
+# Uso:
+#   docker compose -f docker-compose.deps.yml up -d
+#   uv run alembic upgrade head
+#   uv run uvicorn jarvis_orch.main:app --reload
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: jarvis-postgres
+    environment:
+      POSTGRES_USER: jarvis
+      POSTGRES_PASSWORD: jarvis
+      POSTGRES_DB: jarvis
+    ports:
+      - "5432:5432"
+    volumes:
+      - jarvis_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jarvis -d jarvis"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: jarvis-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+volumes:
+  jarvis_pgdata:
