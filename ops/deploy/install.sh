@@ -91,6 +91,13 @@ for unit in jarvis-orchestrator jarvis-worker; do
         "${SCRIPT_DIR}/systemd/${unit}.service" \
         | sudo tee "/etc/systemd/system/${unit}.service" > /dev/null
 done
+
+# Backup timer (opcional pero recomendado — se queda inactivo hasta enable manual)
+sed -e "s|@@REPO_ROOT@@|${REPO_ROOT}|g" \
+    "${SCRIPT_DIR}/systemd/jarvis-backup.service" \
+    | sudo tee /etc/systemd/system/jarvis-backup.service > /dev/null
+sudo cp "${SCRIPT_DIR}/systemd/jarvis-backup.timer" /etc/systemd/system/jarvis-backup.timer
+
 sudo systemctl daemon-reload
 
 # ----------------------------------------------------------------------------
@@ -126,7 +133,11 @@ echo
 echo "  6. Activar y arrancar servicios:"
 echo "     sudo systemctl enable --now jarvis-orchestrator jarvis-worker"
 echo
-echo "  7. Probar:"
+echo "  7. (Opcional) Activar backup diario:"
+echo "     sudo mkdir -p /var/backups/jarvis && sudo chown postgres:postgres /var/backups/jarvis"
+echo "     sudo systemctl enable --now jarvis-backup.timer"
+echo
+echo "  8. Probar:"
 echo "     curl http://localhost:8080/health"
 echo "     curl http://<IP-DEL-VPS>:8080/health"
 echo

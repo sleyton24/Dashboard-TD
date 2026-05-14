@@ -3,8 +3,24 @@
 Stack: **systemd + nginx + Postgres + Redis + Ollama**, todo nativo en el VPS.
 
 Este README es el camino feliz para dejar JARVIS corriendo end-to-end con
-las fases A+B+C ya implementadas. Las fases D-G se despliegan después con
-un simple `git pull && systemctl restart jarvis-orchestrator jarvis-worker`.
+las fases A → F ya implementadas. La Fase G (frontend en Panel TD) se
+despliega después como otro servicio del mismo monorepo. Para actualizar
+con cambios nuevos basta: `git pull && systemctl restart jarvis-orchestrator jarvis-worker`.
+
+**Fases activas tras el deploy:**
+
+- **A+B+C** — orquestador + worker + LangGraph + Ollama.
+- **D** — sub-agentes (SUB-SQL / SUB-ANALYST / SUB-WRITER), tool registry,
+  whitelist SQL con `sqlparse`, `email_draft` queda en cola de aprobación,
+  endpoints `/approvals`.
+- **E** — streaming SSE en `/api/v1/jobs/{id}/stream`. nginx ya tiene un
+  `location` con `proxy_buffering off` para esta ruta.
+- **F** — MCP server ([`services/jarvis-mcp`](../../services/jarvis-mcp/))
+  para invocar JARVIS desde Claude Desktop. **No corre en el VPS** — corre
+  en tu laptop apuntando a `https://jarvis.sanvest.cl/api` (o IP:8080).
+
+Bloqueado hasta gt_018 (credenciales M365 de IT): `SUB-READER` (SharePoint)
+y envío real de emails. Ver [JARVIS roadmap M365](../../docs/JARVIS.md#fase-i).
 
 ---
 
@@ -175,10 +191,57 @@ curl -X POST http://<IP_DEL_VPS>:8080/api/v1/agents/JARVIS-LEAD/invoke \
 # Devuelve un job_id. Polleá:
 curl http://<IP_DEL_VPS>:8080/api/v1/jobs/<job_id> \
   -H "X-API-Key: $API_KEY"
+
+# Stream SSE en vivo (Fase E):
+curl -N http://<IP_DEL_VPS>:8080/api/v1/jobs/<job_id>/stream \
+  -H "X-API-Key: $API_KEY"
+
+# Aprobaciones pendientes (Fase D):
+curl http://<IP_DEL_VPS>:8080/api/v1/approvals?status=pending \
+  -H "X-API-Key: $API_KEY"
 ```
 
 Si el `status` llega a `done` y el `response` tiene una presentación
-coherente: **Fase A+B+C en producción ✅**.
+coherente: **Fases A → F en producción ✅**.
+
+## 9. (Opcional) Backup diario
+
+```bash
+sudo mkdir -p /var/backups/jarvis
+sudo chown postgres:postgres /var/backups/jarvis
+
+# Activar timer systemd (corre 03:30 UTC diario, retiene 14 días)
+sudo systemctl enable --now jarvis-backup.timer
+systemctl list-timers jarvis-backup.timer
+```
+
+Restaurar:
+```bash
+gunzip -c /var/backups/jarvis/jarvis-YYYYMMDD-HHMMSSZ.sql.gz \
+  | sudo -u postgres psql -d jarvis
+```
+
+## 10. Conectar Claude Desktop al VPS (Fase F)
+
+El MCP server vive en tu **laptop**, no en el VPS. Apuntá Claude Desktop a
+la URL pública del orquestador:
+
+```json
+{
+  "mcpServers": {
+    "jarvis": {
+      "command": "uv",
+      "args": ["--directory", "<repo>/services/jarvis-mcp", "run", "jarvis-mcp"],
+      "env": {
+        "JARVIS_API_URL": "http://<IP_DEL_VPS>:8080",
+        "JARVIS_API_KEY": "<la-api-key>"
+      }
+    }
+  }
+}
+```
+
+Detalles y troubleshooting en [`services/jarvis-mcp/README.md`](../../services/jarvis-mcp/README.md).
 
 ---
 
@@ -191,23 +254,27 @@ git pull
 cd services/jarvis-orchestrator
 uv sync                                     # solo si cambiaron deps
 uv run alembic upgrade head                 # solo si hay migraciones nuevas
+uv run python -m jarvis_orch.db.seed        # re-aplica sub-agentes y permisos
 sudo systemctl restart jarvis-orchestrator jarvis-worker
 ```
 
 ### Ver qué está corriendo
 ```bash
 systemctl status jarvis-orchestrator jarvis-worker ollama redis-server postgresql
+systemctl list-timers jarvis-backup.timer       # si activaste el backup
 ```
 
 ### Logs estructurados (JSON en prod)
 ```bash
 journalctl -u jarvis-orchestrator -f --output=cat | jq -c .
 journalctl -u jarvis-worker -f --output=cat | jq -c .
+journalctl -u jarvis-backup -n 50 --output=cat  # último backup
 ```
 
-### Backup de la DB JARVIS
+### Backup manual (ad hoc)
 ```bash
-sudo -u postgres pg_dump jarvis > /backups/jarvis-$(date +%F).sql
+sudo -u postgres bash ~/dashboard-td/ops/deploy/backup.sh
+# Sale en /var/backups/jarvis/jarvis-YYYYMMDD-HHMMSSZ.sql.gz
 ```
 
 ---
@@ -233,3 +300,6 @@ sudo -u postgres pg_dump jarvis > /backups/jarvis-$(date +%F).sql
 | Worker no procesa jobs (status queda en `queued`) | Worker no está corriendo o no ve Redis | `systemctl status jarvis-worker` + `journalctl -u jarvis-worker` |
 | 401 en cada request | API key mal copiada | Re-seed con `--rotate` y guardar la nueva |
 | `502 Bad Gateway` en `<IP>:8080` | uvicorn no está escuchando en :8000 | `systemctl status jarvis-orchestrator` + verificar puerto en service file |
+| `nginx -t` falla tras `install.sh` | site no enlazado | `sudo ln -sf /etc/nginx/sites-available/jarvis.conf /etc/nginx/sites-enabled/jarvis.conf` |
+| SSE corta a los 60s | proxy buffering activo | Verificar que el `location /api/v1/jobs/` de [`nginx/jarvis.conf`](nginx/jarvis.conf) tenga `proxy_buffering off` y timeout 600s |
+| `ToolNotAllowed: Tablas no permitidas en lar` | tabla no en whitelist | Editar `ALLOWED_TABLES` en [`tools/sql_servers.py`](../../services/jarvis-orchestrator/jarvis_orch/tools/sql_servers.py) y reiniciar el worker |

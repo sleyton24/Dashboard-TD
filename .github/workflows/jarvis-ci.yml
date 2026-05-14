@@ -1,0 +1,73 @@
+name: JARVIS — CI
+
+on:
+  push:
+    branches: [main, master]
+    paths:
+      - "services/jarvis-orchestrator/**"
+      - "services/jarvis-mcp/**"
+      - ".github/workflows/jarvis-ci.yml"
+  pull_request:
+    paths:
+      - "services/jarvis-orchestrator/**"
+      - "services/jarvis-mcp/**"
+      - ".github/workflows/jarvis-ci.yml"
+  workflow_dispatch:
+
+# Cancela jobs viejos del mismo PR/branch en lugar de encolarlos.
+concurrency:
+  group: jarvis-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  orchestrator:
+    name: orchestrator — lint + tests offline
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/jarvis-orchestrator
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.10"
+
+      - name: Sync dependencies
+        run: uv sync --frozen 2>/dev/null || uv sync
+
+      - name: Ruff (lint)
+        run: uv run ruff check jarvis_orch tests
+
+      - name: Ruff (format check)
+        run: uv run ruff format --check jarvis_orch tests
+        continue-on-error: true   # warn-only por ahora — endurecer después
+
+      - name: Pytest (suite offline — sin Postgres ni Ollama)
+        env:
+          # Defaults para que pydantic-settings no falle al cargar.
+          JARVIS_ENV: test
+          DATABASE_URL: postgresql+asyncpg://test:test@localhost:5432/test
+          REDIS_URL: redis://localhost:6379/0
+        run: uv run pytest tests/ -v --tb=short
+
+  mcp:
+    name: jarvis-mcp — lint
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/jarvis-mcp
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.5.10"
+
+      - name: Sync dependencies
+        run: uv sync --frozen 2>/dev/null || uv sync
+
+      - name: Ruff (lint)
+        run: uv run ruff check jarvis_mcp

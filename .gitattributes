@@ -1,0 +1,16 @@
+# Forzar LF en todos los archivos de texto.
+# Razón: los shell scripts (install.sh) y los unit files de systemd
+# fallan en Linux si tienen CRLF. Sin esto, Windows/Git mete CRLF al
+# checkout y se rompe el deploy del VPS.
+* text=auto eol=lf
+
+# Archivos binarios — no tocar
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.pdf binary
+*.xlsx binary
+*.db binary
+*.sqlite binary

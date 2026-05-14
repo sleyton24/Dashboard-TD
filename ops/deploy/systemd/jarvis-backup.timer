@@ -1,0 +1,13 @@
+[Unit]
+Description=JARVIS — backup diario (3:30 UTC = 0:30 Chile en verano)
+Requires=jarvis-backup.service
+
+[Timer]
+# Diario a las 03:30 UTC. Persistente: si el VPS estuvo apagado, corre al volver.
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+RandomizedDelaySec=10min
+Unit=jarvis-backup.service
+
+[Install]
+WantedBy=timers.target
