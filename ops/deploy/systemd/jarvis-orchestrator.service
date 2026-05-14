@@ -10,7 +10,9 @@ WorkingDirectory=@@SERVICE_DIR@@
 EnvironmentFile=@@SERVICE_DIR@@/.env
 Environment=JARVIS_ENV=prod
 Environment=PATH=/home/@@DEPLOY_USER@@/.local/bin:@@SERVICE_DIR@@/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-ExecStart=@@SERVICE_DIR@@/.venv/bin/uvicorn jarvis_orch.main:app --host 127.0.0.1 --port 8000 --workers 2
+# Puerto 8002 interno: el 8000 está ocupado por el backend Docker del Panel TD
+# (/opt/dashboard-td/backend). nginx hace proxy 8080 -> 8002.
+ExecStart=@@SERVICE_DIR@@/.venv/bin/uvicorn jarvis_orch.main:app --host 127.0.0.1 --port 8002 --workers 2
 Restart=on-failure
 RestartSec=5
 StandardOutput=journal
