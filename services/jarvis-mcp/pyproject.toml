@@ -1,0 +1,38 @@
+[project]
+name = "jarvis-mcp"
+version = "0.1.0"
+description = "MCP server para invocar JARVIS desde Claude Desktop (Sanvest)"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp[cli]>=1.2",
+    "httpx>=0.27",
+    "pydantic>=2.9",
+    "pydantic-settings>=2.6",
+    "structlog>=24.4",
+]
+
+[project.scripts]
+# Permite arrancar con `uv run jarvis-mcp` (modo stdio para Claude Desktop).
+jarvis-mcp = "jarvis_mcp.server:main"
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=8.3",
+    "pytest-asyncio>=0.24",
+    "ruff>=0.7",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC"]
+ignore = ["E501"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["jarvis_mcp"]
