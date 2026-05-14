@@ -5,7 +5,8 @@ from typing import Annotated
 
 import bcrypt
 from arq import ArqRedis
-from fastapi import Depends, Header, HTTPException, Request, status
+from fastapi import Depends, Header, HTTPException, Query, Request, status
+from redis.asyncio import Redis
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -15,21 +16,24 @@ from jarvis_orch.db.session import get_db
 
 async def get_current_user(
     x_api_key: Annotated[str | None, Header(alias="X-API-Key")] = None,
+    api_key_query: Annotated[str | None, Query(alias="api_key")] = None,
     session: AsyncSession = Depends(get_db),
 ) -> User:
     """Resuelve el usuario detrás de la API key.
 
-    Compara contra `users.api_key_hash` con bcrypt. La API key viaja en el
-    header `X-API-Key`. Falla con 401 si falta o no calza.
+    Acepta el key vía header `X-API-Key` (preferido) o query param `api_key`.
+    El query param existe SOLO para soportar `EventSource` en el browser
+    (que no permite headers custom). Falla con 401 si falta o no calza.
     """
-    if not x_api_key:
+    api_key = x_api_key or api_key_query
+    if not api_key:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="X-API-Key header missing",
             headers={"WWW-Authenticate": "ApiKey"},
         )
 
-    api_key_bytes = x_api_key.encode("utf-8")
+    api_key_bytes = api_key.encode("utf-8")
 
     # Comparar contra todos los usuarios habilitados. En Fase 1 hay 1-3
     # usuarios; cuando crezca, indexar por prefijo de la key.
@@ -68,7 +72,19 @@ async def get_arq(request: Request) -> ArqRedis:
     return pool
 
 
+async def get_redis(request: Request) -> Redis:
+    """Devuelve el client Redis para pub/sub guardado en `app.state.redis`."""
+    client = getattr(request.app.state, "redis", None)
+    if client is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Redis client not initialized",
+        )
+    return client
+
+
 CurrentUser = Annotated[User, Depends(get_current_user)]
 AdminUser = Annotated[User, Depends(require_admin)]
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 ArqPool = Annotated[ArqRedis, Depends(get_arq)]
+RedisClient = Annotated[Redis, Depends(get_redis)]

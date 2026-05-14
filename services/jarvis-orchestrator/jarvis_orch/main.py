@@ -16,7 +16,9 @@ from redis.asyncio import Redis
 from sqlalchemy import text
 
 from jarvis_orch.api import agents as agents_router
+from jarvis_orch.api import approvals as approvals_router
 from jarvis_orch.api import jobs as jobs_router
+from jarvis_orch.api import stream as stream_router
 from jarvis_orch.db.session import SessionLocal, engine
 from jarvis_orch.observability.logging import setup_logging
 from jarvis_orch.settings import get_settings
@@ -28,13 +30,15 @@ logger = structlog.get_logger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Inicializa pool arq, cierra recursos al apagar."""
+    """Inicializa pool arq + cliente Redis pub/sub, cierra recursos al apagar."""
     app.state.arq = await create_pool(RedisSettings.from_dsn(settings.REDIS_URL))
+    app.state.redis = Redis.from_url(settings.REDIS_URL)
     logger.info("orchestrator.startup", env=settings.JARVIS_ENV)
     try:
         yield
     finally:
         await app.state.arq.close()
+        await app.state.redis.aclose()
         await engine.dispose()
         logger.info("orchestrator.shutdown")
 
@@ -49,6 +53,8 @@ app = FastAPI(
 # Routers v1
 app.include_router(agents_router.router, prefix="/api/v1")
 app.include_router(jobs_router.router, prefix="/api/v1")
+app.include_router(approvals_router.router, prefix="/api/v1")
+app.include_router(stream_router.router, prefix="/api/v1")
 
 
 async def _check_db() -> bool:

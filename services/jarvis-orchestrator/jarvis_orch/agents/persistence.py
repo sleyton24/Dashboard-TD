@@ -2,10 +2,16 @@
 
 `record_step` se llama desde cada nodo de cada graph. Acepta `redis` opcional
 para publicar el evento (Fase E SSE).
+
+`publish_terminal_event` lo llaman el worker y los endpoints de approvals para
+notificar a los clientes SSE que el job terminó (done / needs_approval / failed)
+o que cambió de estado externamente (approval decidido).
 """
 from __future__ import annotations
 
-from typing import Any
+import json
+from datetime import datetime, timezone
+from typing import Any, Literal
 from uuid import UUID
 
 from redis.asyncio import Redis
@@ -13,6 +19,11 @@ from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from jarvis_orch.db.models import JobStep
+
+
+CHANNEL_TPL = "jarvis:job:{job_id}"
+
+TerminalEvent = Literal["done", "needs_approval", "failed", "approval_decided"]
 
 
 async def _next_seq(session: AsyncSession, job_id: UUID) -> int:
@@ -58,10 +69,8 @@ async def record_step(
     await session.refresh(step)
 
     if redis is not None:
-        # Publicación al canal SSE — implementación completa en Fase E.
-        import json
         await redis.publish(
-            f"jarvis:job:{job_id}",
+            CHANNEL_TPL.format(job_id=job_id),
             json.dumps(
                 {
                     "type": "step",
@@ -75,8 +84,33 @@ async def record_step(
                         "duration_ms": step.duration_ms,
                         "created_at": step.created_at.isoformat(),
                     },
-                }
+                },
+                default=str,
             ),
         )
 
     return step
+
+
+async def publish_terminal_event(
+    redis: Redis,
+    *,
+    job_id: UUID,
+    event_type: TerminalEvent,
+    data: dict[str, Any] | None = None,
+) -> None:
+    """Publica un evento terminal al canal del job.
+
+    Los clientes SSE deben cerrar la conexión cuando reciban `done`, `failed`
+    o `needs_approval`. `approval_decided` lo emite el endpoint de approvals
+    para notificar a clientes mirando un job en pausa.
+    """
+    payload = {
+        "type": event_type,
+        "data": data or {},
+        "at": datetime.now(timezone.utc).isoformat(),
+    }
+    await redis.publish(
+        CHANNEL_TPL.format(job_id=job_id),
+        json.dumps(payload, default=str),
+    )

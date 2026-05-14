@@ -28,16 +28,49 @@ logger = structlog.get_logger(__name__)
 
 
 JARVIS_LEAD_CAPABILITIES = {
-    "tools": [],  # se rellena en Fase D
-    "can_spawn": ["SUB-READER", "SUB-SQL", "SUB-ANALYST", "SUB-WRITER"],
+    "tools": ["spawn_subagent"],
+    "can_spawn": ["SUB-SQL", "SUB-ANALYST", "SUB-WRITER"],
+    # SUB-READER queda fuera hasta que IT entregue credenciales M365 (gt_018).
 }
+
+# Sub-agentes habilitados en Fase D — cada uno con su set de tools.
+SUB_AGENTS: list[dict] = [
+    {
+        "codename": "SUB-SQL",
+        "name": "Sub-agente SQL",
+        "description": "Consulta las bases Postgres del VPS (lar, icemm, atempora).",
+        "prompt_name": "sub_sql",
+        "capabilities": {
+            "tools": ["sql_describe", "sql_preview", "sql_execute"],
+            "can_spawn": [],
+        },
+    },
+    {
+        "codename": "SUB-ANALYST",
+        "name": "Sub-agente analista",
+        "description": "Cálculos financieros sobre datos pre-extraídos. Sin tools externas.",
+        "prompt_name": "sub_analyst",
+        "capabilities": {"tools": [], "can_spawn": []},
+    },
+    {
+        "codename": "SUB-WRITER",
+        "name": "Sub-agente redactor",
+        "description": "Memos, emails, resúmenes ejecutivos. Email queda en approvals.",
+        "prompt_name": "sub_writer",
+        "capabilities": {"tools": ["email_draft"], "can_spawn": []},
+    },
+]
 
 
 # Defaults Fase 1 (JARVIS.md §7) — usuario admin
 DEFAULT_PERMISSIONS = [
-    ("JARVIS-LEAD", "query.*", 0),       # read-only
+    ("JARVIS-LEAD", "query.*", 3),       # auto: lecturas sin approval
     ("JARVIS-LEAD", "report.*", 1),      # drafts
     ("JARVIS-LEAD", "email.*", 2),       # approve-to-send
+    ("SUB-SQL", "query.*", 3),           # SUB-SQL ejecuta SELECT libremente
+    ("SUB-ANALYST", "compute.*", 3),     # cálculos sin side effects
+    ("SUB-WRITER", "draft.*", 2),        # redactar drafts; email_draft queda en cola
+    ("SUB-WRITER", "email.*", 2),
     # sql.write.* explícitamente bloqueado en Fase 1 → no se inserta
 ]
 
@@ -70,6 +103,46 @@ async def _ensure_agent_jarvis_lead(session) -> Agent:
     await session.commit()
     await session.refresh(agent)
     return agent
+
+
+async def _ensure_sub_agents(session, parent: Agent) -> list[Agent]:
+    """Inserta o actualiza los sub-agentes habilitados en Fase D."""
+    out: list[Agent] = []
+    for spec in SUB_AGENTS:
+        result = await session.execute(
+            select(Agent).where(Agent.codename == spec["codename"])
+        )
+        existing = result.scalar_one_or_none()
+        system_prompt = load_prompt(spec["prompt_name"])
+
+        if existing:
+            existing.system_prompt = system_prompt
+            existing.capabilities = spec["capabilities"]
+            existing.description = spec["description"]
+            existing.parent_id = parent.id
+            existing.enabled = True
+            out.append(existing)
+            continue
+
+        agent = Agent(
+            codename=spec["codename"],
+            name=spec["name"],
+            area="finanzas",
+            role="sub",
+            parent_id=parent.id,
+            description=spec["description"],
+            system_prompt=system_prompt,
+            capabilities=spec["capabilities"],
+            default_model="local",
+            enabled=True,
+        )
+        session.add(agent)
+        out.append(agent)
+
+    await session.commit()
+    for a in out:
+        await session.refresh(a)
+    return out
 
 
 async def _ensure_admin_user(session, email: str, *, rotate: bool) -> tuple[User, str | None]:
@@ -130,12 +203,15 @@ async def run(rotate: bool = False) -> None:
 
     async with SessionLocal() as session:
         agent = await _ensure_agent_jarvis_lead(session)
+        subs = await _ensure_sub_agents(session, agent)
         user, api_key = await _ensure_admin_user(session, settings.JARVIS_ADMIN_EMAIL, rotate=rotate)
         await _ensure_permissions(session, user)
 
     # Output legible para humano (única excepción al "no print")
     print("\n" + "=" * 70)
     print(f"  Agent  : {agent.codename}  ({agent.area} / {agent.role})")
+    for s in subs:
+        print(f"           └─ {s.codename}")
     print(f"  Admin  : {user.email}")
     if api_key is not None:
         print()
