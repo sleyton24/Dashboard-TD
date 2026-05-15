@@ -48,6 +48,7 @@ class LLMRouter:
         task_kind: str | None = None,        # noqa: ARG002 — uso futuro
         agent_default: ModelTier = "local",  # noqa: ARG002 — uso futuro
         temperature: float = 0.2,
+        model: str | None = None,
     ) -> dict[str, Any]:
         """Envía una conversación al modelo local y devuelve la respuesta normalizada.
 
@@ -59,8 +60,9 @@ class LLMRouter:
                 - model: nombre del modelo
                 - usage: {prompt_tokens, completion_tokens, total_tokens, ...}
         """
+        active_model = model or self.model
         body: dict[str, Any] = {
-            "model": self.model,
+            "model": active_model,
             "messages": messages,
             "stream": False,
             "options": {"temperature": temperature},
@@ -75,7 +77,7 @@ class LLMRouter:
         if r.status_code != 200:
             logger.error(
                 "llm.local.error",
-                model=self.model,
+                model=active_model,
                 status=r.status_code,
                 duration_ms=duration_ms,
                 body=r.text[:500],
@@ -93,7 +95,7 @@ class LLMRouter:
 
         logger.info(
             "llm.local.call",
-            model=self.model,
+            model=active_model,
             msg_count=len(messages),
             tools=len(tools or []),
             content_len=len(content),
@@ -107,7 +109,7 @@ class LLMRouter:
             "role": "assistant",
             "content": content,
             "tool_calls": tool_calls,
-            "model": f"local:{self.model}",
+            "model": f"local:{active_model}",
             "usage": {
                 "prompt_tokens": prompt_tokens,
                 "completion_tokens": completion_tokens,

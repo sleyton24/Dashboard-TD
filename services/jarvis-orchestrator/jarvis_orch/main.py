@@ -19,6 +19,7 @@ from sqlalchemy import text
 from jarvis_orch.api import agents as agents_router
 from jarvis_orch.api import approvals as approvals_router
 from jarvis_orch.api import jobs as jobs_router
+from jarvis_orch.api import ollama as ollama_router
 from jarvis_orch.api import stream as stream_router
 from jarvis_orch.db.session import SessionLocal, engine
 from jarvis_orch.observability.logging import setup_logging
@@ -70,6 +71,7 @@ app.include_router(agents_router.router, prefix="/api/v1")
 app.include_router(jobs_router.router, prefix="/api/v1")
 app.include_router(approvals_router.router, prefix="/api/v1")
 app.include_router(stream_router.router, prefix="/api/v1")
+app.include_router(ollama_router.router, prefix="/api/v1")
 
 
 async def _check_db() -> bool:

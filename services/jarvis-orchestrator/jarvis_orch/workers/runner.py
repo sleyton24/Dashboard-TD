@@ -18,7 +18,7 @@ import structlog
 from arq.connections import RedisSettings
 from langgraph.checkpoint.postgres.aio import AsyncPostgresSaver
 from redis.asyncio import Redis
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 import jarvis_orch.tools  # noqa: F401 — registra las @tool en import
 from jarvis_orch.agents.jarvis_lead import build_graph
@@ -53,6 +53,25 @@ async def _on_startup(ctx: dict) -> None:
     # Redis dedicado para pub/sub de eventos SSE — separado del de arq para
     # no mezclar concurrencia de la queue con los publishers.
     ctx["publish_redis"] = Redis.from_url(settings.REDIS_URL)
+
+    # Limpieza de jobs huérfanos: si el worker reinició dejando jobs en
+    # `running`, esos jobs no van a avanzar. Los marcamos `failed`.
+    orphaned = 0
+    async with SessionLocal() as session:
+        res = await session.execute(
+            update(Job)
+            .where(Job.status == "running")
+            .values(
+                status="failed",
+                error="Worker reinició mientras el job estaba en curso",
+                finished_at=datetime.now(timezone.utc),
+            )
+            .returning(Job.id)
+        )
+        orphaned = len(res.fetchall())
+        await session.commit()
+    if orphaned:
+        logger.warning("worker.startup.orphans_cleaned", count=orphaned)
 
     # Inicializar PostgresSaver para checkpoints del lead.
     saver_cm = AsyncPostgresSaver.from_conn_string(_checkpointer_dsn())
@@ -117,15 +136,20 @@ async def _mark_failed(job_id: UUID, error_msg: str, redis: Redis | None) -> Non
 # ---------------------------------------------------------------------------
 # Job entrypoint
 # ---------------------------------------------------------------------------
-async def run_jarvis_lead(ctx: dict, job_id: str) -> None:
+async def run_jarvis_lead(
+    ctx: dict, job_id: str, model_override: str | None = None
+) -> None:
     """Ejecuta (o reanuda) un job invocando el graph del lead.
 
     Si el job está en `needs_approval`, asumimos que el endpoint de
     approvals lo reencoló — usamos el mismo `thread_id` y LangGraph
     retoma desde el checkpoint.
+
+    `model_override`: si viene, el LLM router lo usa en lugar del modelo
+    global de Ollama configurado en .env.
     """
     job_uuid = UUID(job_id)
-    logger.info("worker.job.start", job_id=job_id)
+    logger.info("worker.job.start", job_id=job_id, model_override=model_override)
 
     llm: LLMRouter = ctx["llm"]
     checkpointer = ctx["checkpointer"]
@@ -166,6 +190,7 @@ async def run_jarvis_lead(ctx: dict, job_id: str) -> None:
                     "autonomy_level": 0,
                     "pending_action": None,
                     "final_response": None,
+                    "model_override": model_override,
                 }
                 await graph.ainvoke(initial_state, config=config)
         except Exception as exc:  # noqa: BLE001 — top-level worker barrier
@@ -179,7 +204,9 @@ async def run_jarvis_lead(ctx: dict, job_id: str) -> None:
     logger.info("worker.job.end", job_id=job_id)
 
 
-async def run_subagent_direct(ctx: dict, job_id: str) -> None:
+async def run_subagent_direct(
+    ctx: dict, job_id: str, model_override: str | None = None
+) -> None:
     """Ejecuta un job invocando DIRECTAMENTE el sub-agente — sin pasar por el lead.
 
     Activado cuando el usuario eligió un sub-agente específico al invocar.
@@ -237,6 +264,7 @@ async def run_subagent_direct(ctx: dict, job_id: str) -> None:
                 "request": job.request,
                 "messages": [{"role": "user", "content": job.request}],
                 "active_agent": agent.codename,
+                "model_override": model_override,
             }
             result_state = await subgraph.ainvoke(initial_state)
             final_text = result_state.get("final_response") or ""

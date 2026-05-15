@@ -38,6 +38,9 @@ class InvokeRequest(BaseModel):
     request: str = Field(..., min_length=1, max_length=10_000)
     source: Literal["dashboard", "mcp", "cron", "test"] = "dashboard"
     context: dict[str, Any] | None = None
+    # Si viene, override por-job del OLLAMA_MODEL global. Debe ser un tag
+    # presente en `ollama list` del host (ej. "qwen2.5:7b-instruct-q4_K_M").
+    model_override: str | None = Field(default=None, max_length=200)
 
 
 class JobAttachmentOut(BaseModel):

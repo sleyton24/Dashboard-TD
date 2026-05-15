@@ -1,13 +1,13 @@
 """Router de jobs: listar, ver detalle, ver timeline, cancelar."""
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Annotated
 from uuid import UUID
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from jarvis_orch.api.deps import CurrentUser, DBSession
@@ -17,6 +17,42 @@ from jarvis_orch.db.models import Job, JobStep
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
+
+
+@router.get("/summary")
+async def jobs_summary(user: CurrentUser, session: DBSession) -> dict:
+    """Resumen agregado para el panel de monitoreo en vivo.
+
+    Devuelve counts globales por status y un sub-count de `failed` en
+    las últimas 24h. Solo el usuario actual.
+    """
+    stmt = (
+        select(Job.status, func.count(Job.id))
+        .where(Job.user_id == user.id)
+        .group_by(Job.status)
+    )
+    result = await session.execute(stmt)
+    by_status: dict[str, int] = {row[0]: int(row[1]) for row in result.all()}
+
+    since = datetime.now(timezone.utc) - timedelta(hours=24)
+    failed_24h_q = await session.execute(
+        select(func.count(Job.id)).where(
+            Job.user_id == user.id,
+            Job.status == "failed",
+            Job.created_at >= since,
+        )
+    )
+    failed_24h = int(failed_24h_q.scalar() or 0)
+
+    return {
+        "queued": by_status.get("queued", 0),
+        "running": by_status.get("running", 0),
+        "needs_approval": by_status.get("needs_approval", 0),
+        "done": by_status.get("done", 0),
+        "failed": by_status.get("failed", 0),
+        "cancelled": by_status.get("cancelled", 0),
+        "failed_24h": failed_24h,
+    }
 
 
 @router.get("", response_model=list[JobOut])

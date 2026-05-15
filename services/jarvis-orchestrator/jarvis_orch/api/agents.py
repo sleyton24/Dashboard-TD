@@ -147,7 +147,7 @@ async def invoke_agent(
 
     # Dispatch según role: lead va a run_jarvis_lead, sub a run_subagent_direct.
     fn_name = "run_subagent_direct" if agent.role == "sub" else "run_jarvis_lead"
-    await arq.enqueue_job(fn_name, str(job.id))
+    await arq.enqueue_job(fn_name, str(job.id), body.model_override)
 
     logger.info(
         "agent.invoke",
@@ -190,6 +190,7 @@ async def _parse_invoke_body(
         form = await request.form()
         request_text = form.get("request") or ""
         source = form.get("source") or "dashboard"
+        model_override = form.get("model_override") or None
         files: list[UploadFile] = []
         # `files` puede aparecer N veces — getlist devuelve todos.
         for v in form.getlist("files"):
@@ -198,6 +199,7 @@ async def _parse_invoke_body(
         body = InvokeRequest(
             request=str(request_text),
             source=str(source) if source in {"dashboard", "mcp", "cron", "test"} else "dashboard",
+            model_override=str(model_override) if model_override else None,
         )
         return body, files
 

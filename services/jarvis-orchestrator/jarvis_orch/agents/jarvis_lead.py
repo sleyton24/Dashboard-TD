@@ -44,6 +44,30 @@ AGENT_CODENAME = "JARVIS-LEAD"
 MAX_DELEGATIONS = 6  # tope defensivo contra loops
 
 
+def _msg_to_dict(msg: Any) -> dict:
+    """Convierte un BaseMessage de LangChain o dict a dict OpenAI-style.
+
+    Necesario al reanudar desde checkpoint: AsyncPostgresSaver puede
+    reconstruir mensajes como BaseMessage si el checkpoint fue escrito
+    cuando aún se usaba el reducer add_messages. Sin esta normalización,
+    `.get()` falla con AttributeError y `json.dumps` falla con TypeError.
+    """
+    if isinstance(msg, dict):
+        return msg
+    role_map = {"human": "user", "ai": "assistant", "system": "system", "tool": "tool"}
+    msg_type = getattr(msg, "type", None) or getattr(msg.__class__, "__name__", "user").lower()
+    role = role_map.get(msg_type, "user")
+    content = getattr(msg, "content", str(msg))
+    out: dict[str, Any] = {"role": role, "content": content}
+    tool_calls = getattr(msg, "tool_calls", None)
+    if tool_calls:
+        out["tool_calls"] = tool_calls
+    name = getattr(msg, "name", None)
+    if name:
+        out["name"] = name
+    return out
+
+
 # El lead solo tiene UNA tool meta: spawn_subagent. Las tools reales viven
 # en cada sub-agente. Esto mantiene al lead enfocado en coordinación.
 def _spawn_tool_spec() -> dict[str, Any]:
@@ -97,16 +121,19 @@ def build_graph(
         # Enriquecer con la lista de adjuntos si el job tiene archivos.
         system_prompt = await enrich_prompt(session, UUID(state["job_id"]), base_prompt)
         # Historia conversacional acumulada (incluye delegation_result anteriores).
+        # Normalizamos cada mensaje: el checkpoint puede traer BaseMessage si
+        # quedó escrito antes de migrar a dicts puros.
         messages: list[dict] = [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": state["request"]},
-            *state.get("messages", []),
+            *[_msg_to_dict(m) for m in state.get("messages", [])],
         ]
 
         response = await llm.chat(
             messages,
             tools=[_spawn_tool_spec()],
             task_kind="coordination",
+            model=state.get("model_override"),
         )
 
         job_id = UUID(state["job_id"])
@@ -133,13 +160,13 @@ def build_graph(
             assistant_msg["tool_calls"] = response["tool_calls"]
 
         return {
-            "messages": [*state.get("messages", []), assistant_msg],
+            "messages": [*[_msg_to_dict(m) for m in state.get("messages", [])], assistant_msg],
             "active_agent": AGENT_CODENAME,
         }
 
     async def delegate(state: JarvisState) -> dict:
         """Invoca el (los) sub-agente(s) pedidos por el supervisor."""
-        existing = state.get("messages", [])
+        existing = [_msg_to_dict(m) for m in state.get("messages", [])]
         last = existing[-1] if existing else {}
         tool_calls = last.get("tool_calls") or []
         job_id = UUID(state["job_id"])
@@ -197,6 +224,7 @@ def build_graph(
                 "request": task,
                 "messages": [{"role": "user", "content": task}],
                 "active_agent": codename,
+                "model_override": state.get("model_override"),
             }
             sub_result = await subgraph.ainvoke(sub_state)
             sub_reply = sub_result.get("final_response") or ""
@@ -273,7 +301,8 @@ def build_graph(
         job = result.scalar_one()
 
         final_text = ""
-        for msg in reversed(state.get("messages", [])):
+        for raw in reversed(state.get("messages", [])):
+            msg = _msg_to_dict(raw)
             if msg.get("role") == "assistant" and not msg.get("tool_calls"):
                 final_text = msg.get("content") or ""
                 break
@@ -328,7 +357,7 @@ def _route_supervisor(state: JarvisState) -> str:
     messages = state.get("messages", [])
     if not messages:
         return "finalize"
-    last = messages[-1]
+    last = _msg_to_dict(messages[-1])
     if last.get("role") == "assistant" and last.get("tool_calls"):
         # Defensa contra loop: si ya hubo MAX delegaciones, no abrir otra.
         if _count_delegations(state) >= MAX_DELEGATIONS:
@@ -350,8 +379,8 @@ def _route_delegate(state: JarvisState) -> str:
 def _count_delegations(state: JarvisState) -> int:
     return sum(
         1
-        for m in state.get("messages", [])
-        if m.get("role") == "tool" and m.get("name") == "spawn_subagent"
+        for raw in state.get("messages", [])
+        if (m := _msg_to_dict(raw)).get("role") == "tool" and m.get("name") == "spawn_subagent"
     )
 
 

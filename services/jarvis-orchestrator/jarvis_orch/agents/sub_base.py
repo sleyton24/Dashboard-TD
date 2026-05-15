@@ -29,6 +29,25 @@ from jarvis_orch.agents.persistence import record_step
 from jarvis_orch.agents.state import JarvisState
 from jarvis_orch.tools.registry import ToolContext, dispatch, get_tools_for
 
+
+def _msg_to_dict(msg) -> dict:
+    """Convierte un mensaje LangChain o dict a formato OpenAI-compatible dict."""
+    if isinstance(msg, dict):
+        return msg
+    # LangChain BaseMessage objects
+    role_map = {
+        "human": "user",
+        "ai": "assistant",
+        "system": "system",
+        "tool": "tool",
+        "function": "function",
+    }
+    msg_type = getattr(msg, "type", None) or getattr(msg.__class__, "__name__", "user").lower()
+    role = role_map.get(msg_type, "user")
+    content = getattr(msg, "content", str(msg))
+    return {"role": role, "content": content}
+
+
 logger = structlog.get_logger(__name__)
 
 MAX_TOOL_HOPS = 4
@@ -59,12 +78,13 @@ def build_subagent_graph(
         enriched = await enrich_prompt(session, UUID(state["job_id"]), system_prompt)
         messages: list[dict] = [
             {"role": "system", "content": enriched},
-            *state.get("messages", []),
+            *[_msg_to_dict(m) for m in state.get("messages", [])],
         ]
         response = await llm.chat(
             messages,
             tools=tools_for_agent or None,
             task_kind="tool_use",
+            model=state.get("model_override"),
         )
 
         job_id = UUID(state["job_id"])

@@ -40,3 +40,6 @@ class JarvisState(TypedDict, total=False):
     # Salida intermedia / final
     pending_action: dict[str, Any] | None   # acción pendiente de aprobación
     final_response: str | None              # respuesta al usuario
+
+    # Override por-job del modelo LLM (tag de Ollama). Si None, usa OLLAMA_MODEL.
+    model_override: str | None

@@ -490,6 +490,31 @@
   .agents-config-bar .dot.bad { background: var(--danger); }
   .agents-config-bar .dot.pending { background: var(--warning); }
 
+  /* Monitor: chips de resumen en vivo */
+  .monitor-summary {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 12px;
+  }
+  .ms-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    font-size: 11.5px;
+    font-weight: 600;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  .ms-chip.ms-running { border-color: var(--info); color: var(--info); }
+  .ms-chip.ms-queued { border-color: var(--warning); color: var(--warning); }
+  .ms-chip.ms-approval { border-color: var(--sanvest-green); color: var(--sanvest-green); }
+  .ms-chip.ms-failed { border-color: var(--danger); color: var(--danger); }
+  .ms-chip.ms-done { opacity: 0.7; }
+
   .agents-templates {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -1731,6 +1756,14 @@ state.agents = {
   launcherAgent: 'auto',   // 'auto' | 'JARVIS-LEAD' | 'SUB-SQL' | ...
   launcherFiles: [],       // [{ file: File, name, size }]
   launcherText: '',        // último valor del textarea (preservar al re-render)
+  // Selector de modelo Ollama. `models` se carga del /api/v1/ollama/models.
+  // `launcherModel = ''` significa "default" (lo que diga el backend).
+  models: [],              // [{ name, size }]
+  modelsDefault: '',       // default que viene del backend
+  launcherModel: '',       // tag elegido por el usuario, o '' = default
+  // Auto-refresh del monitor en vivo
+  monitorInterval: null,
+  summary: null,           // { running, queued, failed_24h, ... }
 };
 
 // Sub-agentes habilitados (matchear con jarvis_orch.agents.subagents.SUBAGENT_REGISTRY).
@@ -1780,8 +1813,9 @@ async function saveJarvisConfig() {
   localStorage.setItem('td:jarvis_url', url);
   localStorage.setItem('td:jarvis_key', key);
   closeJarvisConfig();
-  // Probar el /health al guardar.
+  // Probar el /health al guardar y cargar lista de modelos disponibles.
   await refreshHealth();
+  await refreshOllamaModels();
   if (state.activeTab === 'agents') render();
 }
 
@@ -1820,6 +1854,18 @@ async function refreshHealth() {
     state.agents.health = r.ok ? await r.json() : { status: 'unreachable' };
   } catch (e) {
     state.agents.health = { status: 'unreachable', error: e.message };
+  }
+}
+
+async function refreshOllamaModels() {
+  const { url, key } = getJarvisConfig();
+  if (!url || !key) return;
+  try {
+    const r = await jarvis('GET', '/api/v1/ollama/models');
+    state.agents.models = r.models || [];
+    state.agents.modelsDefault = r.default || '';
+  } catch (e) {
+    console.warn('Ollama models no disponibles:', e.message);
   }
 }
 
@@ -1883,9 +1929,19 @@ function setAgentsView(v) {
     state.agents.eventSource.close();
     state.agents.eventSource = null;
   }
+  // Cortar auto-refresh si salimos del monitor
+  if (state.agents.view === 'monitor' && v !== 'monitor') {
+    stopMonitorAutoRefresh();
+  }
   state.agents.view = v;
   // Cargas iniciales por vista
-  if (v === 'monitor') refreshJobs();
+  if (v === 'monitor') {
+    refreshJobs().then(() => {
+      render();
+      startMonitorAutoRefresh();
+    });
+    return;
+  }
   if (v === 'approvals') refreshApprovals();
   render();
 }
@@ -1921,6 +1977,17 @@ function renderAgentesLauncher() {
             ${SUBAGENT_OPTIONS.map(o => `
               <option value="${o.value}" ${state.agents.launcherAgent === o.value ? 'selected' : ''}>
                 ${escapeHtml(o.label)}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Modelo</label>
+          <select id="agentsModelPicker" onchange="state.agents.launcherModel = this.value" ${invoking ? 'disabled' : ''}>
+            <option value="">Default · ${escapeHtml(state.agents.modelsDefault || '(cargando…)')}</option>
+            ${state.agents.models.map(m => `
+              <option value="${escapeHtml(m.name)}" ${state.agents.launcherModel === m.name ? 'selected' : ''}>
+                ${escapeHtml(m.name)} · ${humanSize(m.size)}
               </option>
             `).join('')}
           </select>
@@ -2022,6 +2089,8 @@ async function invokeAgent() {
   const url = `${cfg.url}/api/v1/agents/${encodeURIComponent(codename)}/invoke`;
   const files = state.agents.launcherFiles;
 
+  const modelOverride = state.agents.launcherModel || null;
+
   try {
     let res;
     if (files.length > 0) {
@@ -2029,6 +2098,7 @@ async function invokeAgent() {
       const fd = new FormData();
       fd.append('request', text);
       fd.append('source', 'dashboard');
+      if (modelOverride) fd.append('model_override', modelOverride);
       for (const f of files) fd.append('files', f.file, f.name);
       res = await fetch(url, {
         method: 'POST',
@@ -2043,7 +2113,11 @@ async function invokeAgent() {
           'Accept': 'application/json',
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ request: text, source: 'dashboard' }),
+        body: JSON.stringify({
+          request: text,
+          source: 'dashboard',
+          model_override: modelOverride,
+        }),
       });
     }
     if (!res.ok) {
@@ -2076,21 +2150,67 @@ function humanSize(n) {
 // ============== MONITOR ==============
 async function refreshJobs() {
   try {
-    state.agents.jobs = await jarvis('GET', '/api/v1/jobs?limit=30');
+    const [jobs, summary] = await Promise.all([
+      jarvis('GET', '/api/v1/jobs?limit=30'),
+      jarvis('GET', '/api/v1/jobs/summary').catch(() => null),
+    ]);
+    state.agents.jobs = jobs;
+    if (summary) state.agents.summary = summary;
   } catch (e) {
     state.agents.jobs = [];
     console.error(e);
   }
 }
 
+function startMonitorAutoRefresh() {
+  stopMonitorAutoRefresh();
+  state.agents.monitorInterval = setInterval(async () => {
+    if (state.activeTab !== 'agents' || state.agents.view !== 'monitor') {
+      stopMonitorAutoRefresh();
+      return;
+    }
+    await refreshJobs();
+    // Re-render solo el panel del monitor (evita pisar otros estados/inputs).
+    const root = document.getElementById('agentsViewRoot');
+    if (root) root.innerHTML = renderAgentesMonitor();
+  }, 3000);
+}
+
+function stopMonitorAutoRefresh() {
+  if (state.agents.monitorInterval) {
+    clearInterval(state.agents.monitorInterval);
+    state.agents.monitorInterval = null;
+  }
+}
+
 function renderAgentesMonitor() {
   const jobs = state.agents.jobs;
+  const s = state.agents.summary;
+  const summaryBar = s ? `
+    <div class="monitor-summary">
+      <span class="ms-chip ms-running"><span class="pulse"></span> ${s.running} corriendo</span>
+      <span class="ms-chip ms-queued">${s.queued} encolados</span>
+      <span class="ms-chip ms-approval">${s.needs_approval} pend. aprob.</span>
+      <span class="ms-chip ms-failed">${s.failed_24h} fallidos 24h</span>
+      <span class="ms-chip ms-done">${s.done} completados</span>
+    </div>
+  ` : '';
+  const liveDot = '<span class="pulse" title="auto-refresh 3s"></span>';
   if (!jobs.length) {
-    return `<div class="empty"><h3>Sin jobs todavía</h3><p>Lanzá uno desde la pestaña «Lanzar».</p></div>`;
+    return `
+      ${summaryBar}
+      <div class="toolbar">
+        <span class="muted">${liveDot} en vivo</span>
+        <span class="spacer"></span>
+        <button class="btn btn-secondary btn-sm" onclick="refreshJobs().then(() => render())">⟳ Refrescar</button>
+      </div>
+      <div class="empty"><h3>Sin jobs todavía</h3><p>Lanzá uno desde la pestaña «Lanzar».</p></div>
+    `;
   }
   return `
+    ${summaryBar}
     <div class="toolbar">
-      <span class="muted">${jobs.length} jobs recientes</span>
+      <span class="muted">${liveDot} en vivo · ${jobs.length} recientes</span>
       <span class="spacer"></span>
       <button class="btn btn-secondary btn-sm" onclick="refreshJobs().then(() => render())">⟳ Refrescar</button>
     </div>
@@ -2406,6 +2526,7 @@ loadAll();
 // Probar conexión a JARVIS en background si ya hay config (no bloquea).
 if (getJarvisConfig().url && getJarvisConfig().key) {
   refreshHealth();
+  refreshOllamaModels();
 }
 </script>
 </body>
