@@ -1889,7 +1889,7 @@ function renderAgentes() {
       <button class="${v==='launcher' ? 'active':''}" onclick="setAgentsView('launcher')">Lanzar</button>
       <button class="${v==='monitor' ? 'active':''}" onclick="setAgentsView('monitor')">Jobs</button>
       <button class="${v==='approvals' ? 'active':''}" onclick="setAgentsView('approvals')">Aprobaciones</button>
-      ${v==='detail' ? '<button class="active">Detalle</button>' : ''}
+      ${state.agents.detailJobId ? `<button class="${v==='detail' ? 'active':''}" onclick="openJobDetail('${state.agents.detailJobId}')">Detalle</button>` : ''}
     </div>
     <div id="agentsViewRoot">
       ${v==='launcher' ? renderAgentesLauncher()
@@ -1934,16 +1934,23 @@ function setAgentsView(v) {
     stopMonitorAutoRefresh();
   }
   state.agents.view = v;
-  // Cargas iniciales por vista
+  // Render inmediato para que el usuario vea el cambio de vista; los datos
+  // se cargan después en background y disparan re-render.
+  render();
   if (v === 'monitor') {
     refreshJobs().then(() => {
-      render();
-      startMonitorAutoRefresh();
+      if (state.agents.view === 'monitor') {
+        render();
+        startMonitorAutoRefresh();
+      }
+    }).catch((e) => {
+      console.error('refreshJobs falló:', e);
     });
-    return;
+  } else if (v === 'approvals') {
+    refreshApprovals().then(() => {
+      if (state.agents.view === 'approvals') render();
+    }).catch((e) => { console.error(e); });
   }
-  if (v === 'approvals') refreshApprovals();
-  render();
 }
 
 function afterAgentesRender() {
