@@ -66,6 +66,15 @@ class Settings(BaseSettings):
     M365_CLIENT_ID: str | None = None
     M365_CLIENT_SECRET: str | None = None
 
+    # CORS — orígenes permitidos para llamadas desde el Panel TD frontend.
+    # Lista CSV. `*` permite todo (OK para dev / mismo VPS; restringir cuando
+    # haya dominio real). Sin allow_credentials para mantenerlo simple
+    # (la API key viaja en X-API-Key, no en cookie).
+    CORS_ALLOW_ORIGINS: str = Field(
+        default="*",
+        description="CSV de orígenes permitidos. Ej: 'http://td.sanvest.cl,http://192.168.1.5'.",
+    )
+
     # Operación
     JOB_TIMEOUT_S: int = 300
     MAX_STEPS_PER_JOB: int = 50

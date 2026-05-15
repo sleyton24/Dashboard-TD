@@ -431,6 +431,269 @@
   .cost-card .value { font-size: 16px; font-weight: 700; }
   .cost-card .sub { font-size: 10px; color: var(--text-secondary); margin-top: 2px; }
 
+  /* ============== Agentes (Fase G) ============== */
+  .agents-subnav {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 14px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 4px;
+    width: fit-content;
+  }
+  .agents-subnav button {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    padding: 6px 14px;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    border-radius: 5px;
+    transition: background .15s, color .15s;
+  }
+  .agents-subnav button:hover { color: var(--sanvest-white); }
+  .agents-subnav button.active {
+    background: var(--sanvest-green);
+    color: var(--sanvest-navy);
+    font-weight: 600;
+  }
+
+  .agents-config-bar {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin-bottom: 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .agents-config-bar code {
+    background: var(--navy-2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: var(--sanvest-green);
+  }
+  .agents-config-bar .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    display: inline-block;
+    margin-right: 6px;
+  }
+  .agents-config-bar .dot.ok { background: var(--sanvest-green); }
+  .agents-config-bar .dot.bad { background: var(--danger); }
+  .agents-config-bar .dot.pending { background: var(--warning); }
+
+  .agents-templates {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+  .agents-template-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+  }
+  .agents-template-card:hover {
+    border-color: var(--sanvest-green);
+    background: var(--card-bg-hover);
+  }
+  .agents-template-card .label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 4px;
+  }
+  .agents-template-card .text {
+    font-size: 12.5px;
+    color: var(--sanvest-white);
+    line-height: 1.4;
+  }
+
+  .agents-launcher textarea {
+    width: 100%;
+    min-height: 110px;
+    background: var(--navy-2);
+    color: var(--sanvest-white);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: inherit;
+    font-size: 13.5px;
+    line-height: 1.5;
+    resize: vertical;
+    margin-bottom: 12px;
+  }
+  .agents-launcher textarea:focus {
+    outline: none;
+    border-color: var(--sanvest-green);
+  }
+
+  /* Job detail timeline */
+  .agents-detail-header {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 18px;
+    margin-bottom: 14px;
+  }
+  .agents-detail-header .request {
+    font-size: 14px;
+    color: var(--sanvest-white);
+    margin-bottom: 6px;
+    line-height: 1.4;
+  }
+  .agents-detail-header .meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .agents-detail-response {
+    background: var(--green-soft);
+    border: 1px solid var(--sanvest-green);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 14px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+    font-size: 13.5px;
+  }
+  .agents-detail-response .label {
+    font-size: 10px;
+    color: var(--sanvest-green);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .agents-timeline {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 8px 0;
+  }
+  .agents-step {
+    display: grid;
+    grid-template-columns: 28px 110px 1fr 80px;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    align-items: flex-start;
+    font-size: 12px;
+  }
+  .agents-step:last-child { border-bottom: none; }
+  .agents-step .icon {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: var(--navy-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 11px;
+    font-weight: 700;
+  }
+  .agents-step.kind-reasoning .icon { background: rgba(55,150,170,.25); color: var(--info); }
+  .agents-step.kind-delegation .icon { background: rgba(168,200,19,.25); color: var(--sanvest-green); }
+  .agents-step.kind-tool_call .icon { background: rgba(250,207,34,.25); color: var(--warning); }
+  .agents-step.kind-tool_result .icon { background: rgba(250,207,34,.25); color: var(--warning); }
+  .agents-step.kind-output .icon { background: var(--green-soft); color: var(--sanvest-green); }
+  .agents-step.kind-error .icon { background: rgba(216,50,82,.25); color: var(--danger); }
+  .agents-step .agent {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 600;
+  }
+  .agents-step .payload {
+    color: var(--text-secondary);
+    word-break: break-word;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 11.5px;
+  }
+  .agents-step .payload .kind {
+    color: var(--sanvest-green);
+    font-weight: 600;
+    margin-right: 6px;
+  }
+  .agents-step .duration {
+    color: var(--text-muted);
+    font-size: 11px;
+    text-align: right;
+    white-space: nowrap;
+  }
+
+  .agents-approval-card {
+    background: var(--card-bg);
+    border: 1px solid var(--warning);
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 12px;
+  }
+  .agents-approval-card .action-line {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .agents-approval-card .action-line .action-name {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--warning);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .agents-approval-card .payload-block {
+    background: var(--navy-2);
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 11.5px;
+    color: var(--text-secondary);
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow: auto;
+    margin-bottom: 10px;
+  }
+  .agents-approval-card .approval-actions {
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+  }
+
+  .badge-job-queued { background: rgba(250,207,34,.18); color: var(--warning); }
+  .badge-job-running { background: rgba(55,150,170,.25); color: var(--info); }
+  .badge-job-done { background: var(--green-soft); color: var(--sanvest-green); }
+  .badge-job-failed { background: rgba(216,50,82,.18); color: var(--danger); }
+  .badge-job-needs_approval { background: rgba(239,115,27,.2); color: var(--orange); }
+  .badge-job-cancelled { background: rgba(255,255,255,0.08); color: var(--text-muted); }
+
+  .pulse {
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--info);
+    animation: pulse 1.6s infinite;
+    margin-right: 6px;
+    vertical-align: middle;
+  }
+  @keyframes pulse {
+    0%   { opacity: 1; transform: scale(1); }
+    50%  { opacity: 0.4; transform: scale(1.3); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+
   .hidden { display: none !important; }
   .muted { color: var(--text-muted); }
   .row-actions { display: flex; gap: 4px; justify-content: flex-end; }
@@ -505,6 +768,7 @@
   <button class="tab" data-panel="trainings">Capacitaciones</button>
   <button class="tab" data-panel="gantt">Plan 100 días</button>
   <button class="tab" data-panel="projects">Proyectos</button>
+  <button class="tab" data-panel="agents">Agentes</button>
 </div>
 
 <div id="content"></div>
@@ -516,6 +780,26 @@
     <div class="modal-actions">
       <button class="btn btn-secondary btn-sm" onclick="closeModal()">Cancelar</button>
       <button class="btn btn-danger btn-sm" id="modalConfirm">Confirmar</button>
+    </div>
+  </div>
+</div>
+
+<!-- Modal: configuración de JARVIS (URL + API key) -->
+<div class="modal-bg" id="jarvisConfigBg">
+  <div class="modal" style="max-width: 480px;">
+    <h3>Conectar a JARVIS</h3>
+    <p>Para usar el agente, ingresá la URL del orquestador y tu API key.</p>
+    <div class="field" style="margin-bottom: 12px;">
+      <label>URL del orquestador</label>
+      <input type="text" id="jarvisConfigUrl" placeholder="http://&lt;IP-VPS&gt;:8080">
+    </div>
+    <div class="field" style="margin-bottom: 18px;">
+      <label>API Key (X-API-Key)</label>
+      <input type="password" id="jarvisConfigKey" placeholder="2247d4cf...">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-secondary btn-sm" onclick="closeJarvisConfig()">Cancelar</button>
+      <button class="btn btn-sm" onclick="saveJarvisConfig()">Guardar y probar</button>
     </div>
   </div>
 </div>
@@ -694,6 +978,10 @@ function render() {
   else if (state.activeTab === 'trainings') c.innerHTML = renderTrainings();
   else if (state.activeTab === 'gantt') c.innerHTML = renderGantt();
   else if (state.activeTab === 'projects') c.innerHTML = renderProjects();
+  else if (state.activeTab === 'agents') {
+    c.innerHTML = renderAgentes();
+    afterAgentesRender();
+  }
   attachListeners();
 }
 
@@ -1345,8 +1633,522 @@ function logout() {
   location.reload();
 }
 
+// ============================================================================
+// ============== AGENTES (Fase G) — frontend del orquestador JARVIS ==========
+// ============================================================================
+
+// Estado de la pestaña Agentes. Vive fuera del state principal porque tiene
+// su propia auth (X-API-Key vs Bearer del Panel TD).
+state.agents = {
+  view: 'launcher',        // 'launcher' | 'monitor' | 'detail' | 'approvals'
+  jobs: [],
+  approvals: [],
+  detailJobId: null,
+  detail: null,            // { job, steps }
+  eventSource: null,       // EventSource activo para detalle
+  health: null,            // último /health visto
+  invoking: false,
+};
+
+// Templates de consultas frecuentes para que el usuario no parta de cero.
+const JARVIS_TEMPLATES = [
+  { label: 'Ocupación LAR ahora', text: '¿Cuántas unidades arrendadas tiene LAR ahora mismo? Detallá por edificio.' },
+  { label: 'Variación ingresos LAR', text: 'Variación de ingresos LAR mes contra mes en lo que va del año.' },
+  { label: 'EERR ICEMM (real vs ppto)', text: 'Real vs presupuesto de ICEMM La Quebrada YTD. Mostrá el gap absoluto y porcentual.' },
+  { label: 'Memo cierre de mes', text: 'Redactá un memo ejecutivo (1 página) con los números de cierre de mes para el directorio.' },
+];
+
+// ============== CONFIG (URL + API key) ==============
+function getJarvisConfig() {
+  return {
+    url: localStorage.getItem('td:jarvis_url') || '',
+    key: localStorage.getItem('td:jarvis_key') || '',
+  };
+}
+
+function openJarvisConfig() {
+  const cfg = getJarvisConfig();
+  document.getElementById('jarvisConfigUrl').value = cfg.url;
+  document.getElementById('jarvisConfigKey').value = cfg.key;
+  document.getElementById('jarvisConfigBg').classList.add('active');
+}
+
+function closeJarvisConfig() {
+  document.getElementById('jarvisConfigBg').classList.remove('active');
+}
+
+async function saveJarvisConfig() {
+  const url = document.getElementById('jarvisConfigUrl').value.trim().replace(/\/$/, '');
+  const key = document.getElementById('jarvisConfigKey').value.trim();
+  if (!url || !key) { alert('URL y API key son obligatorios.'); return; }
+  localStorage.setItem('td:jarvis_url', url);
+  localStorage.setItem('td:jarvis_key', key);
+  closeJarvisConfig();
+  // Probar el /health al guardar.
+  await refreshHealth();
+  if (state.activeTab === 'agents') render();
+}
+
+// ============== JARVIS API CLIENT ==============
+async function jarvis(method, path, body = null) {
+  const { url, key } = getJarvisConfig();
+  if (!url || !key) throw new Error('Falta configurar URL y API key de JARVIS.');
+  const opts = {
+    method,
+    headers: {
+      'X-API-Key': key,
+      'Accept': 'application/json',
+    },
+  };
+  if (body !== null) {
+    opts.headers['Content-Type'] = 'application/json';
+    opts.body = JSON.stringify(body);
+  }
+  const res = await fetch(url + path, opts);
+  if (res.status === 401 || res.status === 403) {
+    throw new Error('API key inválida. Reconfigurá la conexión.');
+  }
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`JARVIS ${method} ${path} → ${res.status}: ${txt.slice(0, 200)}`);
+  }
+  if (res.status === 204) return null;
+  return res.json();
+}
+
+async function refreshHealth() {
+  try {
+    const { url } = getJarvisConfig();
+    if (!url) { state.agents.health = null; return; }
+    const r = await fetch(url + '/health');
+    state.agents.health = r.ok ? await r.json() : { status: 'unreachable' };
+  } catch (e) {
+    state.agents.health = { status: 'unreachable', error: e.message };
+  }
+}
+
+// ============== AGENTES — VIEW DISPATCH ==============
+function renderAgentes() {
+  const cfg = getJarvisConfig();
+  if (!cfg.url || !cfg.key) {
+    return `
+      <div class="empty">
+        <h3>JARVIS no está configurado</h3>
+        <p>Configura la URL del orquestador y tu API key para empezar.</p>
+        <button class="btn btn-sm" style="margin-top:14px" onclick="openJarvisConfig()">Configurar conexión</button>
+      </div>
+    `;
+  }
+
+  const v = state.agents.view;
+  return `
+    ${renderAgentesConfigBar()}
+    <div class="agents-subnav">
+      <button class="${v==='launcher' ? 'active':''}" onclick="setAgentsView('launcher')">Lanzar</button>
+      <button class="${v==='monitor' ? 'active':''}" onclick="setAgentsView('monitor')">Jobs</button>
+      <button class="${v==='approvals' ? 'active':''}" onclick="setAgentsView('approvals')">Aprobaciones</button>
+      ${v==='detail' ? '<button class="active">Detalle</button>' : ''}
+    </div>
+    <div id="agentsViewRoot">
+      ${v==='launcher' ? renderAgentesLauncher()
+        : v==='monitor' ? renderAgentesMonitor()
+        : v==='detail' ? renderAgentesDetail()
+        : v==='approvals' ? renderAgentesApprovals()
+        : ''}
+    </div>
+  `;
+}
+
+function renderAgentesConfigBar() {
+  const cfg = getJarvisConfig();
+  const h = state.agents.health;
+  let dot = 'pending', msg = 'sin verificar';
+  if (h && h.status === 'ok') { dot = 'ok'; msg = 'operativo'; }
+  else if (h && h.status === 'degraded') { dot = 'pending'; msg = 'degradado'; }
+  else if (h && h.status === 'unreachable') { dot = 'bad'; msg = 'inalcanzable'; }
+  const detail = h ? Object.entries(h)
+    .filter(([k]) => ['db','redis','ollama'].includes(k))
+    .map(([k,v]) => `${k}: ${v ? '✓' : '✗'}`).join(' · ') : '';
+  return `
+    <div class="agents-config-bar">
+      <span><span class="dot ${dot}"></span>${msg}</span>
+      <span class="muted">${detail}</span>
+      <span class="muted">→ <code>${escapeHtml(cfg.url || '(sin URL)')}</code></span>
+      <span class="spacer"></span>
+      <button class="btn-icon" onclick="refreshHealth().then(() => render())" title="Re-chequear">⟳</button>
+      <button class="btn-icon" onclick="openJarvisConfig()" title="Cambiar URL/key">⚙</button>
+    </div>
+  `;
+}
+
+function setAgentsView(v) {
+  // Cerrar SSE si dejamos detalle
+  if (state.agents.view === 'detail' && v !== 'detail' && state.agents.eventSource) {
+    state.agents.eventSource.close();
+    state.agents.eventSource = null;
+  }
+  state.agents.view = v;
+  // Cargas iniciales por vista
+  if (v === 'monitor') refreshJobs();
+  if (v === 'approvals') refreshApprovals();
+  render();
+}
+
+function afterAgentesRender() {
+  // Punto único para hookear listeners que necesitan elementos ya en DOM.
+  // Si el detalle está abierto y no hay SSE, abrirlo.
+  if (state.agents.view === 'detail' && state.agents.detailJobId && !state.agents.eventSource) {
+    openSSE(state.agents.detailJobId);
+  }
+}
+
+// ============== LAUNCHER ==============
+function renderAgentesLauncher() {
+  const invoking = state.agents.invoking;
+  return `
+    <div class="agents-launcher">
+      <div class="agents-templates">
+        ${JARVIS_TEMPLATES.map((t, i) => `
+          <div class="agents-template-card" onclick="useTemplate(${i})">
+            <div class="label">${escapeHtml(t.label)}</div>
+            <div class="text">${escapeHtml(t.text)}</div>
+          </div>
+        `).join('')}
+      </div>
+      <textarea id="agentsRequest" placeholder="Escribí lo que querés que JARVIS haga…" ${invoking ? 'disabled' : ''}></textarea>
+      <div class="toolbar">
+        <span class="muted">JARVIS-LEAD delega a SUB-SQL / SUB-ANALYST / SUB-WRITER según la tarea.</span>
+        <span class="spacer"></span>
+        <button class="btn" onclick="invokeAgent()" ${invoking ? 'disabled' : ''}>
+          ${invoking ? 'Invocando…' : 'Invocar →'}
+        </button>
+      </div>
+    </div>
+  `;
+}
+
+function useTemplate(i) {
+  document.getElementById('agentsRequest').value = JARVIS_TEMPLATES[i].text;
+}
+
+async function invokeAgent() {
+  const text = document.getElementById('agentsRequest').value.trim();
+  if (!text) { alert('Escribí una instrucción primero.'); return; }
+  state.agents.invoking = true;
+  render();
+  try {
+    const r = await jarvis('POST', '/api/v1/agents/JARVIS-LEAD/invoke', {
+      request: text,
+      source: 'dashboard',
+    });
+    state.agents.invoking = false;
+    // Saltar directo al detalle con stream en vivo
+    state.agents.detailJobId = r.job_id;
+    state.agents.detail = null;
+    state.agents.view = 'detail';
+    render();
+  } catch (e) {
+    state.agents.invoking = false;
+    alert('Error al invocar: ' + e.message);
+    render();
+  }
+}
+
+// ============== MONITOR ==============
+async function refreshJobs() {
+  try {
+    state.agents.jobs = await jarvis('GET', '/api/v1/jobs?limit=30');
+  } catch (e) {
+    state.agents.jobs = [];
+    console.error(e);
+  }
+}
+
+function renderAgentesMonitor() {
+  const jobs = state.agents.jobs;
+  if (!jobs.length) {
+    return `<div class="empty"><h3>Sin jobs todavía</h3><p>Lanzá uno desde la pestaña «Lanzar».</p></div>`;
+  }
+  return `
+    <div class="toolbar">
+      <span class="muted">${jobs.length} jobs recientes</span>
+      <span class="spacer"></span>
+      <button class="btn btn-secondary btn-sm" onclick="refreshJobs().then(() => render())">⟳ Refrescar</button>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Estado</th>
+            <th>Solicitud</th>
+            <th>Inicio</th>
+            <th>Duración</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          ${jobs.map(j => `
+            <tr style="cursor:pointer" onclick="openJobDetail('${j.id}')">
+              <td><span class="badge badge-job-${j.status}">${j.status}</span></td>
+              <td>${escapeHtml((j.request || '').slice(0, 80))}${(j.request || '').length > 80 ? '…' : ''}</td>
+              <td class="nowrap muted">${j.started_at ? new Date(j.started_at).toLocaleString('es-CL') : '—'}</td>
+              <td class="nowrap muted">${jobDuration(j)}</td>
+              <td><button class="btn-icon">→</button></td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function jobDuration(j) {
+  if (!j.started_at || !j.finished_at) return j.status === 'running' ? 'en curso…' : '—';
+  const ms = new Date(j.finished_at) - new Date(j.started_at);
+  return (ms / 1000).toFixed(1) + 's';
+}
+
+// ============== DETAIL (con SSE en vivo) ==============
+async function openJobDetail(jobId) {
+  state.agents.detailJobId = jobId;
+  state.agents.detail = null;
+  if (state.agents.eventSource) { state.agents.eventSource.close(); state.agents.eventSource = null; }
+  state.agents.view = 'detail';
+  render();
+}
+
+function closeDetail() {
+  if (state.agents.eventSource) { state.agents.eventSource.close(); state.agents.eventSource = null; }
+  state.agents.detailJobId = null;
+  state.agents.detail = null;
+  state.agents.view = 'monitor';
+  refreshJobs().then(() => render());
+}
+
+function renderAgentesDetail() {
+  const d = state.agents.detail;
+  if (!d) {
+    return `<div class="empty"><p><span class="pulse"></span>Conectando al stream del job…</p></div>`;
+  }
+  const j = d.job;
+  const steps = d.steps || [];
+  return `
+    <div class="toolbar">
+      <button class="btn btn-secondary btn-sm" onclick="closeDetail()">← Volver</button>
+      <span class="spacer"></span>
+      ${j.status === 'running' ? '<span><span class="pulse"></span>En vivo</span>' : ''}
+    </div>
+    <div class="agents-detail-header">
+      <div class="request">${escapeHtml(j.request)}</div>
+      <div class="meta">
+        <span><span class="badge badge-job-${j.status}">${j.status}</span></span>
+        <span>Inicio: ${j.started_at ? new Date(j.started_at).toLocaleString('es-CL') : '—'}</span>
+        <span>Duración: ${jobDuration(j)}</span>
+        <span>${steps.length} pasos</span>
+      </div>
+    </div>
+    ${j.response ? `
+      <div class="agents-detail-response">
+        <div class="label">Respuesta</div>
+        ${escapeHtml(j.response)}
+      </div>
+    ` : ''}
+    <div class="agents-timeline">
+      ${steps.length ? steps.map(s => renderStep(s)).join('') : '<div class="empty" style="padding:24px"><p>Sin pasos aún…</p></div>'}
+    </div>
+  `;
+}
+
+function renderStep(s) {
+  const iconMap = {
+    'reasoning': '🧠',
+    'delegation': '↪',
+    'tool_call': '⚙',
+    'tool_result': '←',
+    'output': '✓',
+    'error': '✗',
+  };
+  return `
+    <div class="agents-step kind-${s.kind}">
+      <div class="icon">${iconMap[s.kind] || '•'}</div>
+      <div class="agent">${escapeHtml(s.agent_codename)}</div>
+      <div class="payload">
+        <span class="kind">${s.kind}</span>
+        ${renderStepPayload(s)}
+      </div>
+      <div class="duration">${s.duration_ms ? s.duration_ms + 'ms' : ''}</div>
+    </div>
+  `;
+}
+
+function renderStepPayload(s) {
+  const p = s.payload || {};
+  if (s.kind === 'output') return escapeHtml((p.text || '').slice(0, 200));
+  if (s.kind === 'delegation') return `→ ${escapeHtml(p.to || '?')} · ${escapeHtml((p.task_preview || '').slice(0, 100))}`;
+  if (s.kind === 'tool_call') return `${escapeHtml(p.tool || '?')}(${(p.args_keys || []).join(', ')})`;
+  if (s.kind === 'tool_result') {
+    const ok = p.success ? '✓' : '✗';
+    return `${ok} ${escapeHtml(p.tool || '?')}${p.error ? ' — ' + escapeHtml(p.error) : ''}`;
+  }
+  if (s.kind === 'reasoning') {
+    const t = p.tokens || {};
+    return `${t.prompt_tokens || 0} in · ${t.completion_tokens || 0} out`;
+  }
+  if (s.kind === 'error') return escapeHtml((p.error || '').slice(0, 200));
+  return escapeHtml(JSON.stringify(p).slice(0, 120));
+}
+
+function openSSE(jobId) {
+  const { url, key } = getJarvisConfig();
+  if (!url || !key) return;
+  // EventSource no soporta headers custom → pasamos la key por query param.
+  const es = new EventSource(`${url}/api/v1/jobs/${jobId}/stream?api_key=${encodeURIComponent(key)}`);
+  state.agents.eventSource = es;
+  state.agents.detail = { job: { id: jobId, request: '...', status: 'queued' }, steps: [] };
+
+  es.addEventListener('snapshot', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      state.agents.detail = {
+        job: {
+          id: data.job_id,
+          request: data.request,
+          status: data.status,
+          started_at: data.started_at,
+          finished_at: data.finished_at,
+          response: data.response,
+        },
+        steps: data.steps || [],
+      };
+      if (state.agents.view === 'detail') render();
+    } catch (err) { console.error('SSE snapshot parse', err); }
+  });
+
+  es.addEventListener('step', (e) => {
+    try {
+      const data = JSON.parse(e.data);
+      if (state.agents.detail) {
+        // Anti-duplicación por seq
+        if (!state.agents.detail.steps.some(s => s.seq === data.seq)) {
+          state.agents.detail.steps.push(data);
+          state.agents.detail.steps.sort((a, b) => a.seq - b.seq);
+        }
+      }
+      if (state.agents.view === 'detail') render();
+    } catch (err) { console.error('SSE step parse', err); }
+  });
+
+  const onTerminal = (eventType) => async (e) => {
+    try {
+      const data = e.data ? JSON.parse(e.data) : {};
+      if (state.agents.detail) {
+        state.agents.detail.job.status = eventType === 'done' ? 'done'
+          : eventType === 'failed' ? 'failed'
+          : eventType === 'needs_approval' ? 'needs_approval'
+          : state.agents.detail.job.status;
+        if (data.response) state.agents.detail.job.response = data.response;
+        if (!state.agents.detail.job.finished_at) state.agents.detail.job.finished_at = new Date().toISOString();
+      }
+      es.close();
+      state.agents.eventSource = null;
+      // Refrescar la versión completa del job para tener response final
+      try {
+        const fresh = await jarvis('GET', `/api/v1/jobs/${jobId}`);
+        if (state.agents.detail) {
+          state.agents.detail.job = fresh;
+          state.agents.detail.steps = fresh.steps || state.agents.detail.steps;
+        }
+      } catch (_) { /* mostrar lo que tenemos */ }
+      if (state.agents.view === 'detail') render();
+    } catch (err) { console.error('SSE terminal parse', err); }
+  };
+  es.addEventListener('done', onTerminal('done'));
+  es.addEventListener('failed', onTerminal('failed'));
+  es.addEventListener('needs_approval', onTerminal('needs_approval'));
+
+  es.onerror = () => {
+    // EventSource intenta reconectar solo; lo cerramos solo si el job ya está terminal.
+    console.warn('SSE error en job', jobId);
+  };
+}
+
+// ============== APPROVALS ==============
+async function refreshApprovals() {
+  try {
+    state.agents.approvals = await jarvis('GET', '/api/v1/approvals?status=pending');
+  } catch (e) {
+    state.agents.approvals = [];
+    console.error(e);
+  }
+}
+
+function renderAgentesApprovals() {
+  const apps = state.agents.approvals;
+  if (!apps.length) {
+    return `
+      <div class="empty">
+        <h3>No hay aprobaciones pendientes</h3>
+        <p>Las acciones sensibles (emails, escrituras) aparecen acá esperando tu OK.</p>
+      </div>
+    `;
+  }
+  return `
+    <div class="toolbar">
+      <span class="muted">${apps.length} pendiente${apps.length === 1 ? '' : 's'}</span>
+      <span class="spacer"></span>
+      <button class="btn btn-secondary btn-sm" onclick="refreshApprovals().then(() => render())">⟳ Refrescar</button>
+    </div>
+    ${apps.map(a => renderApprovalCard(a)).join('')}
+  `;
+}
+
+function renderApprovalCard(a) {
+  return `
+    <div class="agents-approval-card">
+      <div class="action-line">
+        <span class="action-name">${escapeHtml(a.action)}</span>
+        <span class="muted">${new Date(a.requested_at).toLocaleString('es-CL')}</span>
+      </div>
+      <div class="payload-block">${escapeHtml(JSON.stringify(a.payload, null, 2))}</div>
+      <div class="approval-actions">
+        <button class="btn btn-danger btn-sm" onclick="decideApproval('${a.id}', 'rejected')">Rechazar</button>
+        <button class="btn btn-sm" onclick="decideApproval('${a.id}', 'approved')">Aprobar</button>
+      </div>
+    </div>
+  `;
+}
+
+async function decideApproval(approvalId, decision) {
+  let reason = null;
+  if (decision === 'rejected') {
+    reason = prompt('Motivo (opcional):') || null;
+  }
+  try {
+    await jarvis('POST', `/api/v1/approvals/${approvalId}/decide`, { decision, reason });
+    await refreshApprovals();
+    render();
+  } catch (e) {
+    alert('Error: ' + e.message);
+  }
+}
+
+// ============== HTML escape helper ==============
+function escapeHtml(s) {
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 // ============== INIT ==============
 loadAll();
+// Probar conexión a JARVIS en background si ya hay config (no bloquea).
+if (getJarvisConfig().url && getJarvisConfig().key) {
+  refreshHealth();
+}
 </script>
 </body>
 </html>

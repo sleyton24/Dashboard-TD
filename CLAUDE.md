@@ -4,11 +4,12 @@
 
 ## Qué es esto
 
-Dashboard interno para hacer seguimiento del Plan de 100 Días de Transformación Digital de Sanvest Group. Cuatro módulos:
+Dashboard interno para hacer seguimiento del Plan de 100 Días de Transformación Digital de Sanvest Group. Cinco módulos:
 1. **Software** — inventario de licencias contratadas por unidad de negocio (precio, renovaciones, responsables)
 2. **Capacitaciones** — sesiones de formación en IA al equipo
 3. **Plan 100 Días** — Gantt con los 32 entregables del plan estratégico
 4. **Proyectos** — monitoreo de proyectos en que la jefatura está involucrada (por unidad, responsable, fechas, estado)
+5. **Agentes** — frontend del orquestador JARVIS (lanzar tareas, ver timeline en vivo vía SSE, aprobar acciones). Vive en `services/jarvis-orchestrator/`. Configuración (URL + API key) en localStorage por usuario.
 
 Origen: nació como artifact en claude.ai con `window.storage`. Migrado a app full-stack con FastAPI + SQLite, frontend HTML+JS plano, desplegada con Docker Compose + Caddy.
 
@@ -93,8 +94,14 @@ dashboard-td/
 
 ### Frontend vanilla
 - Un solo HTML con CSS y JS inline
-- ~1300 líneas. Suficiente para este uso. No vale la pena agregar React/Vite/build pipeline
-- **Cuándo migrar a React**: si se agrega autenticación con redirects M365, múltiples vistas, o cuando se justifique un build pipeline
+- ~2100 líneas (con la pestaña Agentes de Fase G). Suficiente para este uso. No vale la pena agregar React/Vite/build pipeline.
+- **Cuándo migrar a React**: si se agrega autenticación con redirects M365, múltiples vistas, o cuando se justifique un build pipeline.
+
+### Pestaña Agentes
+- Habla con el orquestador JARVIS (servicio aparte, `services/jarvis-orchestrator/`), no con el backend del Panel TD. Eso significa otra auth (X-API-Key) y otra URL base.
+- Config persistida en localStorage: `td:jarvis_url` y `td:jarvis_key`. Modal de configuración al entrar por primera vez.
+- Vista "Detalle de job" consume el SSE de JARVIS (`/api/v1/jobs/{id}/stream`). EventSource del browser no admite headers custom → la API key viaja como `?api_key=` en la URL del stream (deps.py de JARVIS la acepta por header O query).
+- Necesita CORS habilitado en el orquestador (env `CORS_ALLOW_ORIGINS` — default `*`).
 
 ### Caddy (no nginx)
 - Auto-TLS con Let's Encrypt out-of-the-box

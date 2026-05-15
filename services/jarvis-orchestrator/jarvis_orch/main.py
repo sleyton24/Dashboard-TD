@@ -12,6 +12,7 @@ import structlog
 from arq import create_pool
 from arq.connections import RedisSettings
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from redis.asyncio import Redis
 from sqlalchemy import text
 
@@ -48,6 +49,20 @@ app = FastAPI(
     description="Orquestador de agentes financieros para Grupo Sanvest.",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# CORS — necesario para que el frontend del Panel TD (otro origen / puerto)
+# pueda llamar al API y abrir SSE. Sin credentials porque la autenticación
+# va por X-API-Key, no por cookies.
+_cors_origins = [
+    o.strip() for o in settings.CORS_ALLOW_ORIGINS.split(",") if o.strip()
+]
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_credentials=False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["X-API-Key", "Content-Type", "Accept"],
 )
 
 # Routers v1

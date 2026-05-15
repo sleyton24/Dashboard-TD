@@ -25,7 +25,11 @@ Plan de ejecución por fases: [`docs/BUILD_JARVIS.md`](../../docs/BUILD_JARVIS.m
   idempotente, unit files de systemd para orquestador + worker + backup diario
   (timer), nginx con `proxy_buffering off` para SSE, CI GitHub Actions
   (`.github/workflows/jarvis-ci.yml`) corre ruff + pytest offline en cada PR.
-- ⏳ Fase G pendiente (frontend Panel TD).
+- ✅ Fase G: pestaña **Agentes** en el frontend del Panel TD
+  ([`../../frontend/index.html`](../../frontend/index.html)). Launcher con templates,
+  monitor de jobs, detalle con timeline en vivo (SSE via EventSource), aprobaciones.
+  Config (URL + API key) en localStorage. Requiere CORS — middleware agregado
+  con `CORS_ALLOW_ORIGINS` env (default `*`).
 
 ## Quick start (dev local con Docker)
 
