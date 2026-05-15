@@ -2386,6 +2386,21 @@ function escapeHtml(s) {
     .replace(/'/g, '&#39;');
 }
 
+// ============== UX: cerrar modales / detalle con click fuera o ESC ==============
+document.querySelectorAll('.modal-bg').forEach((bg) => {
+  bg.addEventListener('click', (e) => {
+    if (e.target === bg) bg.classList.remove('active');
+  });
+});
+document.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  const open = document.querySelector('.modal-bg.active');
+  if (open) { open.classList.remove('active'); return; }
+  if (state.activeTab === 'agents' && state.agents.view === 'detail') {
+    closeDetail();
+  }
+});
+
 // ============== INIT ==============
 loadAll();
 // Probar conexión a JARVIS en background si ya hay config (no bloquea).
