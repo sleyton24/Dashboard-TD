@@ -1,9 +1,19 @@
-"""Estado compartido del graph LangGraph del lead agent y sub-agentes."""
+"""Estado compartido del graph LangGraph del lead agent y sub-agentes.
+
+Decisión deliberada: NO usamos el reducer `add_messages` de LangGraph.
+Ese reducer convierte automáticamente nuestros dicts (`{"role": "user",
+"content": "..."}`) en instancias de `BaseMessage` (HumanMessage,
+AIMessage, etc.), lo que rompe la serialización JSON al pasarlas al
+LLM router de Ollama (httpx no sabe serializar BaseMessage).
+
+En cambio, cada nodo del graph que agrega mensajes debe hacer
+`{"messages": [*state.get("messages", []), nuevo]}` manualmente. Es un
+poco más verboso pero mantiene los mensajes como dicts simples a través
+de todo el pipeline (LLM, persistencia, SSE, audit).
+"""
 from __future__ import annotations
 
-from typing import Annotated, Any, TypedDict
-
-from langgraph.graph.message import add_messages
+from typing import Any, TypedDict
 
 
 class JarvisState(TypedDict, total=False):
@@ -18,8 +28,9 @@ class JarvisState(TypedDict, total=False):
     user_id: str
     request: str
 
-    # Conversación con el LLM (acumulativa via add_messages)
-    messages: Annotated[list[dict], add_messages]
+    # Conversación con el LLM. Lista plana de dicts. Cada nodo que agrega
+    # mensajes debe concatenar (`[*state.get("messages", []), nuevo]`).
+    messages: list[dict]
 
     # Coordinación
     active_agent: str             # 'JARVIS-LEAD' o codename de sub-agente

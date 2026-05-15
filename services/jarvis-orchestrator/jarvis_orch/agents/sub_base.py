@@ -91,14 +91,14 @@ def build_subagent_graph(
             assistant_msg["tool_calls"] = response["tool_calls"]
 
         return {
-            "messages": [assistant_msg],
+            "messages": [*state.get("messages", []), assistant_msg],
             "active_agent": codename,
         }
 
     async def tool_exec(state: JarvisState) -> dict:
         """Ejecuta el (o los) tool_call más reciente del LLM, en orden."""
-        messages = state.get("messages", [])
-        last = messages[-1] if messages else {}
+        existing = state.get("messages", [])
+        last = existing[-1] if existing else {}
         tool_calls = last.get("tool_calls") or []
 
         job_id = UUID(state["job_id"])
@@ -153,7 +153,7 @@ def build_subagent_graph(
                 }
             )
 
-        return {"messages": new_messages}
+        return {"messages": [*existing, *new_messages]}
 
     async def respond(state: JarvisState) -> dict:
         """Empaqueta la respuesta final del sub-agente para el lead."""

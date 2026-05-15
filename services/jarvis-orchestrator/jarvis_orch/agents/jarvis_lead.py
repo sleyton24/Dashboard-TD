@@ -133,13 +133,14 @@ def build_graph(
             assistant_msg["tool_calls"] = response["tool_calls"]
 
         return {
-            "messages": [assistant_msg],
+            "messages": [*state.get("messages", []), assistant_msg],
             "active_agent": AGENT_CODENAME,
         }
 
     async def delegate(state: JarvisState) -> dict:
         """Invoca el (los) sub-agente(s) pedidos por el supervisor."""
-        last = state.get("messages", [])[-1] if state.get("messages") else {}
+        existing = state.get("messages", [])
+        last = existing[-1] if existing else {}
         tool_calls = last.get("tool_calls") or []
         job_id = UUID(state["job_id"])
         new_messages: list[dict] = []
@@ -223,7 +224,7 @@ def build_graph(
                 # Pausamos el flujo: el supervisor decidirá si finalizar o
                 # esperar la aprobación.
                 return {
-                    "messages": new_messages,
+                    "messages": [*existing, *new_messages],
                     "pending_action": {
                         "approval_id": str(pending.id),
                         "action": pending.action,
@@ -231,7 +232,7 @@ def build_graph(
                     },
                 }
 
-        return {"messages": new_messages}
+        return {"messages": [*existing, *new_messages]}
 
     async def request_approval(state: JarvisState) -> dict:
         """Marca el job como needs_approval. El graph termina acá."""
