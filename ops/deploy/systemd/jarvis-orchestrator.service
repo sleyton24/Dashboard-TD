@@ -24,6 +24,9 @@ NoNewPrivileges=true
 PrivateTmp=true
 ProtectSystem=full
 ProtectHome=read-only
+# Directorio de adjuntos (uploads del usuario al invocar). El install.sh
+# lo crea con owner = deploy user.
+ReadWritePaths=/var/lib/jarvis
 
 [Install]
 WantedBy=multi-user.target

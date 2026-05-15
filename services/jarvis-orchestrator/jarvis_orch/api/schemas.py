@@ -40,10 +40,21 @@ class InvokeRequest(BaseModel):
     context: dict[str, Any] | None = None
 
 
+class JobAttachmentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: UUID
+    original_name: str
+    mime: str
+    size_bytes: int
+    created_at: datetime
+
+
 class InvokeResponse(BaseModel):
     job_id: UUID
     status: str
     stream_url: str
+    attachments: list[JobAttachmentOut] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------
@@ -86,6 +97,7 @@ class JobOut(BaseModel):
 
 class JobDetail(JobOut):
     steps: list[JobStepOut] = Field(default_factory=list)
+    attachments: list[JobAttachmentOut] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

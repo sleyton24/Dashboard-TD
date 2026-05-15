@@ -113,11 +113,40 @@ class Job(Base):
         cascade="all, delete-orphan",
         order_by="JobStep.seq",
     )
+    attachments: Mapped[list["JobAttachment"]] = relationship(
+        "JobAttachment",
+        back_populates="job",
+        cascade="all, delete-orphan",
+        order_by="JobAttachment.created_at",
+    )
 
     __table_args__ = (
         Index("idx_jobs_user_created", "user_id", "created_at"),
         Index("idx_jobs_status", "status"),
     )
+
+
+# ---------------------------------------------------------------------------
+# Adjuntos del usuario al invocar (xlsx, pdf, csv, txt — leíbles por agentes)
+# ---------------------------------------------------------------------------
+class JobAttachment(Base):
+    __tablename__ = "job_attachments"
+
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    job_id: Mapped[uuid.UUID] = mapped_column(
+        UUID(as_uuid=True), ForeignKey("jobs.id", ondelete="CASCADE"), nullable=False
+    )
+    original_name: Mapped[str] = mapped_column(Text, nullable=False)
+    stored_path: Mapped[str] = mapped_column(Text, nullable=False)
+    mime: Mapped[str] = mapped_column(Text, nullable=False)
+    size_bytes: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False, server_default=func.now()
+    )
+
+    job: Mapped["Job"] = relationship("Job", back_populates="attachments")
+
+    __table_args__ = (Index("idx_job_attachments_job", "job_id"),)
 
 
 # ---------------------------------------------------------------------------

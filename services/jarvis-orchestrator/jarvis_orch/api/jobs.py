@@ -41,11 +41,11 @@ async def list_jobs(
 
 @router.get("/{job_id}", response_model=JobDetail)
 async def get_job(job_id: UUID, user: CurrentUser, session: DBSession) -> Job:
-    """Detalle completo de un job, incluyendo timeline de steps."""
+    """Detalle completo de un job, incluyendo timeline de steps y adjuntos."""
     stmt = (
         select(Job)
         .where(Job.id == job_id, Job.user_id == user.id)
-        .options(selectinload(Job.steps))
+        .options(selectinload(Job.steps), selectinload(Job.attachments))
     )
     result = await session.execute(stmt)
     job = result.scalar_one_or_none()

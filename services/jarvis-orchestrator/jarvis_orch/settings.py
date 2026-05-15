@@ -75,6 +75,21 @@ class Settings(BaseSettings):
         description="CSV de orígenes permitidos. Ej: 'http://td.sanvest.cl,http://192.168.1.5'.",
     )
 
+    # Adjuntos: dónde guardar los archivos subidos al invocar.
+    # En prod usar /var/lib/jarvis/attachments con permisos del user de servicio.
+    ATTACHMENTS_DIR: str = Field(
+        default="/var/lib/jarvis/attachments",
+        description="Directorio raíz donde guardar adjuntos por job.",
+    )
+    ATTACHMENT_MAX_BYTES: int = Field(
+        default=20 * 1024 * 1024,  # 20 MB por archivo (nginx total: 25 MB)
+        description="Tamaño máximo por archivo adjunto.",
+    )
+    ATTACHMENT_MAX_FILES: int = Field(
+        default=10,
+        description="Cantidad máxima de archivos por job.",
+    )
+
     # Operación
     JOB_TIMEOUT_S: int = 300
     MAX_STEPS_PER_JOB: int = 50

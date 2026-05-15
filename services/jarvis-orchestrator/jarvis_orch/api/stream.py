@@ -49,7 +49,11 @@ async def stream_job(
 ) -> EventSourceResponse:
     """Stream SSE de un job: snapshot inicial + eventos en vivo."""
     # Verifica ownership antes de abrir el stream — admin ve todo.
-    stmt = select(Job).where(Job.id == job_id).options(selectinload(Job.steps))
+    stmt = (
+        select(Job)
+        .where(Job.id == job_id)
+        .options(selectinload(Job.steps), selectinload(Job.attachments))
+    )
     if user.role != "admin":
         stmt = stmt.where(Job.user_id == user.id)
     result = await session.execute(stmt)
@@ -66,6 +70,16 @@ async def stream_job(
             "started_at": job.started_at.isoformat() if job.started_at else None,
             "finished_at": job.finished_at.isoformat() if job.finished_at else None,
             "response": job.response,
+            "attachments": [
+                {
+                    "id": str(a.id),
+                    "original_name": a.original_name,
+                    "mime": a.mime,
+                    "size_bytes": a.size_bytes,
+                    "created_at": a.created_at.isoformat(),
+                }
+                for a in sorted(job.attachments, key=lambda x: x.created_at)
+            ],
             "steps": [
                 {
                     "id": str(s.id),

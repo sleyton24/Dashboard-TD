@@ -24,7 +24,8 @@ import jarvis_orch.tools  # noqa: F401 — registra las @tool en import
 from jarvis_orch.agents.jarvis_lead import build_graph
 from jarvis_orch.agents.llm_router import LLMRouter
 from jarvis_orch.agents.persistence import publish_terminal_event, record_step
-from jarvis_orch.db.models import Job
+from jarvis_orch.agents.subagents import build_subagent
+from jarvis_orch.db.models import Agent, Job
 from jarvis_orch.db.session import SessionLocal, engine
 from jarvis_orch.observability.logging import setup_logging
 from jarvis_orch.settings import get_settings
@@ -178,6 +179,106 @@ async def run_jarvis_lead(ctx: dict, job_id: str) -> None:
     logger.info("worker.job.end", job_id=job_id)
 
 
+async def run_subagent_direct(ctx: dict, job_id: str) -> None:
+    """Ejecuta un job invocando DIRECTAMENTE el sub-agente — sin pasar por el lead.
+
+    Activado cuando el usuario eligió un sub-agente específico al invocar.
+    El sub-agente recibe el `request` del usuario tal cual, y corre su
+    propio graph (reason → tool_exec → respond). Sin checkpointer: la
+    aprobación funciona porque al pedir email_draft el tool deja el row
+    en `approvals` y el sub-agente responde con el approval_id; el lead
+    no participa. El frontend muestra la aprobación normalmente.
+    """
+    job_uuid = UUID(job_id)
+    logger.info("worker.subagent.start", job_id=job_id)
+
+    llm: LLMRouter = ctx["llm"]
+    publish_redis: Redis | None = ctx.get("publish_redis")
+    failure: Exception | None = None
+    final_text = ""
+
+    async with SessionLocal() as session:
+        result = await session.execute(
+            select(Job, Agent)
+            .join(Agent, Agent.id == Job.agent_id)
+            .where(Job.id == job_uuid)
+        )
+        row = result.one_or_none()
+        if row is None:
+            logger.error("worker.subagent.not_found", job_id=job_id)
+            return
+        job, agent = row
+
+        if agent.role != "sub":
+            logger.error(
+                "worker.subagent.wrong_role",
+                job_id=job_id,
+                role=agent.role,
+                codename=agent.codename,
+            )
+            return
+
+        job.status = "running"
+        if job.started_at is None:
+            job.started_at = datetime.now(timezone.utc)
+        await session.commit()
+
+        try:
+            subgraph = build_subagent(
+                agent.codename,
+                session=session,
+                llm=llm,
+                user_id=job.user_id,
+                redis=publish_redis,
+            )
+            initial_state: dict = {
+                "job_id": job_id,
+                "user_id": str(job.user_id),
+                "request": job.request,
+                "messages": [{"role": "user", "content": job.request}],
+                "active_agent": agent.codename,
+            }
+            result_state = await subgraph.ainvoke(initial_state)
+            final_text = result_state.get("final_response") or ""
+
+            # Detectar si quedó approval pendiente — en ese caso el job va a
+            # needs_approval en lugar de done.
+            from jarvis_orch.db.models import Approval  # noqa: PLC0415 — local import
+            pending = await session.execute(
+                select(Approval.id)
+                .where(Approval.job_id == job_uuid, Approval.decided_at.is_(None))
+                .limit(1)
+            )
+            has_pending = pending.scalar_one_or_none() is not None
+
+            if has_pending:
+                job.status = "needs_approval"
+                job.response = final_text
+            else:
+                job.status = "done"
+                job.response = final_text
+                job.finished_at = datetime.now(timezone.utc)
+            await session.commit()
+
+            if publish_redis is not None:
+                event_type = "needs_approval" if has_pending else "done"
+                await publish_terminal_event(
+                    publish_redis,
+                    job_id=job_uuid,
+                    event_type=event_type,
+                    data={"response": final_text[:500]} if not has_pending else {},
+                )
+        except Exception as exc:  # noqa: BLE001
+            logger.exception("worker.subagent.failed", job_id=job_id)
+            await session.rollback()
+            failure = exc
+
+    if failure is not None:
+        await _mark_failed(job_uuid, repr(failure), publish_redis)
+
+    logger.info("worker.subagent.end", job_id=job_id)
+
+
 class WorkerSettings:
     """Configuración del worker arq.
 
@@ -185,7 +286,7 @@ class WorkerSettings:
         arq jarvis_orch.workers.runner.WorkerSettings
     """
 
-    functions = [run_jarvis_lead]
+    functions = [run_jarvis_lead, run_subagent_direct]
     redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
     on_startup = _on_startup
     on_shutdown = _on_shutdown

@@ -50,6 +50,12 @@ sudo apt-get install -y --no-install-recommends \
 # Habilitar redis si no estaba
 sudo systemctl enable --now redis-server
 
+# Directorio de adjuntos — los archivos que sube el usuario al invocar.
+# Owner = deploy user para que systemd unit lo pueda escribir.
+sudo mkdir -p /var/lib/jarvis/attachments
+sudo chown -R "${DEPLOY_USER}:${DEPLOY_USER}" /var/lib/jarvis
+sudo chmod 750 /var/lib/jarvis /var/lib/jarvis/attachments
+
 # ----------------------------------------------------------------------------
 # 2. uv (manejador de paquetes Python)
 # ----------------------------------------------------------------------------

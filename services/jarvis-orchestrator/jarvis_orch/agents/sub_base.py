@@ -23,6 +23,7 @@ from langgraph.graph import END, START, StateGraph
 from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from jarvis_orch.agents.context import enrich_prompt
 from jarvis_orch.agents.llm_router import LLMRouter
 from jarvis_orch.agents.persistence import record_step
 from jarvis_orch.agents.state import JarvisState
@@ -54,8 +55,10 @@ def build_subagent_graph(
 
     async def reason(state: JarvisState) -> dict:
         """Llama al LLM con las tools del scope. Decide tool_call o respond."""
+        # Inyectar la lista de adjuntos al prompt si el job tiene archivos.
+        enriched = await enrich_prompt(session, UUID(state["job_id"]), system_prompt)
         messages: list[dict] = [
-            {"role": "system", "content": system_prompt},
+            {"role": "system", "content": enriched},
             *state.get("messages", []),
         ]
         response = await llm.chat(

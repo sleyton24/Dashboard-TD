@@ -540,6 +540,85 @@
     border-color: var(--sanvest-green);
   }
 
+  /* Picker de agente + adjuntos */
+  .agents-controls {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+  .agents-controls .field label {
+    display: block;
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+  .agents-controls select {
+    width: 100%;
+    background: var(--navy-2);
+    color: var(--sanvest-white);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 9px 10px;
+    font-family: inherit;
+    font-size: 13px;
+  }
+  .agents-controls select:focus {
+    outline: none;
+    border-color: var(--sanvest-green);
+  }
+  .agents-file-drop {
+    background: var(--navy-2);
+    border: 1px dashed var(--border-strong);
+    border-radius: 6px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    font-size: 12px;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+  .agents-file-drop:hover {
+    border-color: var(--sanvest-green);
+    background: var(--card-bg-hover);
+  }
+  .agents-file-drop input[type="file"] { display: none; }
+  .agents-attach-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .agents-attach-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .agents-attach-row .filename {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .agents-attach-row .size {
+    color: var(--text-muted);
+    font-size: 11px;
+  }
+  @media (max-width: 720px) {
+    .agents-controls { grid-template-columns: 1fr; }
+  }
+
   /* Job detail timeline */
   .agents-detail-header {
     background: var(--card-bg);
@@ -1644,11 +1723,28 @@ state.agents = {
   jobs: [],
   approvals: [],
   detailJobId: null,
-  detail: null,            // { job, steps }
+  detail: null,            // { job, steps, attachments }
   eventSource: null,       // EventSource activo para detalle
   health: null,            // último /health visto
   invoking: false,
+  // Estado del launcher: queda fuera del DOM para sobrevivir re-renders.
+  launcherAgent: 'auto',   // 'auto' | 'JARVIS-LEAD' | 'SUB-SQL' | ...
+  launcherFiles: [],       // [{ file: File, name, size }]
+  launcherText: '',        // último valor del textarea (preservar al re-render)
 };
+
+// Sub-agentes habilitados (matchear con jarvis_orch.agents.subagents.SUBAGENT_REGISTRY).
+const SUBAGENT_OPTIONS = [
+  { value: 'auto',         label: 'Auto · JARVIS decide' },
+  { value: 'JARVIS-LEAD',  label: 'JARVIS-LEAD · coordinador (puede delegar)' },
+  { value: 'SUB-SQL',      label: 'SUB-SQL · consultas Postgres' },
+  { value: 'SUB-ANALYST',  label: 'SUB-ANALYST · cálculos sobre datos' },
+  { value: 'SUB-WRITER',   label: 'SUB-WRITER · redacción y emails' },
+];
+
+const ALLOWED_ATTACH_EXTS = ['.xlsx', '.xls', '.pdf', '.csv', '.tsv', '.txt', '.md', '.json'];
+const ATTACH_MAX_BYTES = 20 * 1024 * 1024;   // matchear settings del backend
+const ATTACH_MAX_COUNT = 10;
 
 // Templates de consultas frecuentes para que el usuario no parta de cero.
 const JARVIS_TEMPLATES = [
@@ -1805,6 +1901,8 @@ function afterAgentesRender() {
 // ============== LAUNCHER ==============
 function renderAgentesLauncher() {
   const invoking = state.agents.invoking;
+  const files = state.agents.launcherFiles;
+  const text = state.agents.launcherText;
   return `
     <div class="agents-launcher">
       <div class="agents-templates">
@@ -1815,9 +1913,45 @@ function renderAgentesLauncher() {
           </div>
         `).join('')}
       </div>
-      <textarea id="agentsRequest" placeholder="Escribí lo que querés que JARVIS haga…" ${invoking ? 'disabled' : ''}></textarea>
+
+      <div class="agents-controls">
+        <div class="field">
+          <label>Asignar a</label>
+          <select id="agentsPicker" onchange="state.agents.launcherAgent = this.value" ${invoking ? 'disabled' : ''}>
+            ${SUBAGENT_OPTIONS.map(o => `
+              <option value="${o.value}" ${state.agents.launcherAgent === o.value ? 'selected' : ''}>
+                ${escapeHtml(o.label)}
+              </option>
+            `).join('')}
+          </select>
+        </div>
+        <div class="field">
+          <label>Adjuntos (xlsx, pdf, csv, txt, md, json — hasta ${ATTACH_MAX_COUNT})</label>
+          <label class="agents-file-drop">
+            <span><strong>+ Adjuntar archivo</strong> · click para seleccionar</span>
+            <span class="muted">${files.length}/${ATTACH_MAX_COUNT} · cap 20 MB c/u</span>
+            <input type="file" multiple accept="${ALLOWED_ATTACH_EXTS.join(',')}"
+                   onchange="onLauncherFilesPicked(event)" ${invoking ? 'disabled' : ''}>
+          </label>
+          ${files.length ? `
+            <div class="agents-attach-list">
+              ${files.map((f, i) => `
+                <div class="agents-attach-row">
+                  <span class="filename">${escapeHtml(f.name)}</span>
+                  <span class="size">${humanSize(f.size)}</span>
+                  <button class="btn-icon" onclick="removeLauncherFile(${i})" title="Quitar" ${invoking ? 'disabled' : ''}>✕</button>
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </div>
+      </div>
+
+      <textarea id="agentsRequest" placeholder="Escribí lo que querés que el agente haga…"
+                oninput="state.agents.launcherText = this.value"
+                ${invoking ? 'disabled' : ''}>${escapeHtml(text)}</textarea>
       <div class="toolbar">
-        <span class="muted">JARVIS-LEAD delega a SUB-SQL / SUB-ANALYST / SUB-WRITER según la tarea.</span>
+        <span class="muted">${launcherHint()}</span>
         <span class="spacer"></span>
         <button class="btn" onclick="invokeAgent()" ${invoking ? 'disabled' : ''}>
           ${invoking ? 'Invocando…' : 'Invocar →'}
@@ -1827,22 +1961,101 @@ function renderAgentesLauncher() {
   `;
 }
 
+function launcherHint() {
+  const agent = state.agents.launcherAgent;
+  if (agent === 'auto' || agent === 'JARVIS-LEAD') {
+    return 'JARVIS-LEAD coordina y delega a SUB-SQL / SUB-ANALYST / SUB-WRITER según la tarea.';
+  }
+  const map = {
+    'SUB-SQL':     'SUB-SQL ejecuta SELECT contra lar/icemm/atempora. Solo lectura.',
+    'SUB-ANALYST': 'SUB-ANALYST hace cálculos sobre datos en el prompt. Sin tools externas.',
+    'SUB-WRITER': 'SUB-WRITER redacta texto. Si pedís email, queda en cola de aprobación.',
+  };
+  return map[agent] || '';
+}
+
 function useTemplate(i) {
-  document.getElementById('agentsRequest').value = JARVIS_TEMPLATES[i].text;
+  state.agents.launcherText = JARVIS_TEMPLATES[i].text;
+  const ta = document.getElementById('agentsRequest');
+  if (ta) ta.value = JARVIS_TEMPLATES[i].text;
+}
+
+function onLauncherFilesPicked(ev) {
+  const files = Array.from(ev.target.files || []);
+  for (const f of files) {
+    if (state.agents.launcherFiles.length >= ATTACH_MAX_COUNT) {
+      alert(`Máximo ${ATTACH_MAX_COUNT} archivos. Algunos no se agregaron.`);
+      break;
+    }
+    const ext = '.' + (f.name.split('.').pop() || '').toLowerCase();
+    if (!ALLOWED_ATTACH_EXTS.includes(ext)) {
+      alert(`Extensión no soportada: ${f.name}. Permitidas: ${ALLOWED_ATTACH_EXTS.join(', ')}`);
+      continue;
+    }
+    if (f.size > ATTACH_MAX_BYTES) {
+      alert(`${f.name} supera 20 MB. Saltado.`);
+      continue;
+    }
+    state.agents.launcherFiles.push({ file: f, name: f.name, size: f.size });
+  }
+  ev.target.value = ''; // reset para permitir re-seleccionar el mismo archivo
+  render();
+}
+
+function removeLauncherFile(i) {
+  state.agents.launcherFiles.splice(i, 1);
+  render();
 }
 
 async function invokeAgent() {
-  const text = document.getElementById('agentsRequest').value.trim();
+  const text = (state.agents.launcherText || '').trim();
   if (!text) { alert('Escribí una instrucción primero.'); return; }
+
+  // Resolver codename: 'auto' → JARVIS-LEAD; el resto, literal.
+  const pick = state.agents.launcherAgent || 'auto';
+  const codename = pick === 'auto' ? 'JARVIS-LEAD' : pick;
+
   state.agents.invoking = true;
   render();
+
+  const cfg = getJarvisConfig();
+  const url = `${cfg.url}/api/v1/agents/${encodeURIComponent(codename)}/invoke`;
+  const files = state.agents.launcherFiles;
+
   try {
-    const r = await jarvis('POST', '/api/v1/agents/JARVIS-LEAD/invoke', {
-      request: text,
-      source: 'dashboard',
-    });
+    let res;
+    if (files.length > 0) {
+      // multipart cuando hay archivos
+      const fd = new FormData();
+      fd.append('request', text);
+      fd.append('source', 'dashboard');
+      for (const f of files) fd.append('files', f.file, f.name);
+      res = await fetch(url, {
+        method: 'POST',
+        headers: { 'X-API-Key': cfg.key, 'Accept': 'application/json' },
+        body: fd,
+      });
+    } else {
+      res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'X-API-Key': cfg.key,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ request: text, source: 'dashboard' }),
+      });
+    }
+    if (!res.ok) {
+      const txt = await res.text();
+      throw new Error(`HTTP ${res.status}: ${txt.slice(0, 300)}`);
+    }
+    const r = await res.json();
     state.agents.invoking = false;
-    // Saltar directo al detalle con stream en vivo
+    // Limpiar launcher para la próxima invocación
+    state.agents.launcherFiles = [];
+    state.agents.launcherText = '';
+    // Saltar al detalle con stream en vivo
     state.agents.detailJobId = r.job_id;
     state.agents.detail = null;
     state.agents.view = 'detail';
@@ -1852,6 +2065,12 @@ async function invokeAgent() {
     alert('Error al invocar: ' + e.message);
     render();
   }
+}
+
+function humanSize(n) {
+  if (n >= 1024 * 1024) return (n / 1024 / 1024).toFixed(1) + ' MB';
+  if (n >= 1024) return (n / 1024).toFixed(1) + ' KB';
+  return n + ' B';
 }
 
 // ============== MONITOR ==============
@@ -1932,6 +2151,7 @@ function renderAgentesDetail() {
   }
   const j = d.job;
   const steps = d.steps || [];
+  const atts = d.attachments || [];
   return `
     <div class="toolbar">
       <button class="btn btn-secondary btn-sm" onclick="closeDetail()">← Volver</button>
@@ -1945,7 +2165,19 @@ function renderAgentesDetail() {
         <span>Inicio: ${j.started_at ? new Date(j.started_at).toLocaleString('es-CL') : '—'}</span>
         <span>Duración: ${jobDuration(j)}</span>
         <span>${steps.length} pasos</span>
+        ${atts.length ? `<span>${atts.length} adjunto${atts.length === 1 ? '' : 's'}</span>` : ''}
       </div>
+      ${atts.length ? `
+        <div class="agents-attach-list" style="margin-top: 10px;">
+          ${atts.map(a => `
+            <div class="agents-attach-row">
+              <span>📎</span>
+              <span class="filename">${escapeHtml(a.original_name)}</span>
+              <span class="size">${humanSize(a.size_bytes)}</span>
+            </div>
+          `).join('')}
+        </div>
+      ` : ''}
     </div>
     ${j.response ? `
       <div class="agents-detail-response">
@@ -2019,7 +2251,18 @@ function openSSE(jobId) {
           response: data.response,
         },
         steps: data.steps || [],
+        attachments: data.attachments || [],
       };
+      // Si el snapshot no trae attachments (versión vieja del backend),
+      // los pedimos por GET /jobs/{id} para tenerlos visibles.
+      if (!data.attachments) {
+        jarvis('GET', `/api/v1/jobs/${jobId}`).then(fresh => {
+          if (state.agents.detail) {
+            state.agents.detail.attachments = fresh.attachments || [];
+            if (state.agents.view === 'detail') render();
+          }
+        }).catch(() => {});
+      }
       if (state.agents.view === 'detail') render();
     } catch (err) { console.error('SSE snapshot parse', err); }
   });
