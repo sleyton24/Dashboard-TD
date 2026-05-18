@@ -6,6 +6,10 @@ deliberadamente explícitas sobre qué hace y cuándo NO usarla.
 
 Arrancar (en config de Claude Desktop):
     uv run --directory <path> jarvis-mcp
+
+NOTA: la configuración de structlog a stderr vive en `jarvis_mcp/__init__.py`
+y se aplica automáticamente al importar el package. Si agregás `print()` en
+cualquier lado, usá `print(..., file=sys.stderr)` o romperás el protocolo.
 """
 from __future__ import annotations
 
